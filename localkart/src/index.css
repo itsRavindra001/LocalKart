@@ -1,0 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+@import "tailwindcss";
+.input-field {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:outline-none;
+}
