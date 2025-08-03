@@ -7,6 +7,7 @@ const bookingSchema = new mongoose.Schema({
   service: { type: String, required: true },
   date: { type: String, required: true },
   address: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // ✅ Add this
 }, { timestamps: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);

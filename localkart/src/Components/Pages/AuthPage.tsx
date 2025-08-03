@@ -49,6 +49,7 @@ const AuthPage = () => {
 
     try {
       if (isLogin) {
+        // LOGIN
         const res = await fetch('http://localhost:5000/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -59,7 +60,8 @@ const AuthPage = () => {
         });
 
         const data = await res.json();
-        if (res.ok && data.user) {
+
+        if (res.ok && data.token && data.user) {
           alert('Login successful!');
           localStorage.setItem('token', data.token);
           localStorage.setItem('username', data.user.username);
@@ -72,7 +74,9 @@ const AuthPage = () => {
         } else {
           alert(data.message || 'Login failed');
         }
+
       } else {
+        // SIGNUP
         if (
           !formData.name ||
           !formData.username ||
@@ -98,13 +102,15 @@ const AuthPage = () => {
         });
 
         const data = await res.json();
-        if (res.ok) {
+
+        if (res.ok && data.token && data.user) {
           alert('Signup successful!');
-          localStorage.setItem('username', formData.username);
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('username', data.user.username);
           login({
-            username: formData.username,
-            email: formData.email,
-            role: formData.role,
+            username: data.user.username,
+            email: data.user.email,
+            role: data.user.role,
           });
           navigate('/');
         } else {
@@ -119,7 +125,6 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-gray-100 px-4">
-      {/* Left: Illustration */}
       <div className="hidden md:flex w-1/2 justify-center">
         <img
           src="https://jungleworks.com/wp-content/uploads/2021/07/HyperLocalImg.png"
@@ -128,7 +133,6 @@ const AuthPage = () => {
         />
       </div>
 
-      {/* Right: Form */}
       <form
         onSubmit={handleSubmit}
         className="w-full md:w-1/2 max-w-md bg-white p-8 shadow-lg rounded-md"
@@ -197,7 +201,6 @@ const AuthPage = () => {
           </>
         )}
 
-        {/* Password */}
         <div className="relative mb-4">
           <input
             type={showPassword ? 'text' : 'password'}
@@ -251,7 +254,6 @@ const AuthPage = () => {
           </div>
         )}
 
-        {/* CAPTCHA */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Human Verification: {captcha.question}

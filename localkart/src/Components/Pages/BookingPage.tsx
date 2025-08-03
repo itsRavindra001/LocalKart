@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import emailjs from '@emailjs/browser';
 import MapPicker from './MapPicker';
-const token = localStorage.getItem('token');
 
 emailjs.init('_ifDJ94YMPffwWLlN'); // Replace with your actual EmailJS public key
 
@@ -20,26 +19,7 @@ const BookingPage = () => {
 
   useEffect(() => {
     generateCaptcha();
-    fetchUserProfile();
   }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!res.ok) throw new Error('Unauthorized');
-      const user = await res.json();
-      setFormData((prev) => ({
-        ...prev,
-        name: user.name || '',
-        email: user.email || '',
-      }));
-    } catch (err) {
-      console.warn('User not logged in or failed to fetch profile:', err);
-    }
-  };
 
   const generateCaptcha = () => {
     const a = Math.floor(Math.random() * 10) + 1;
@@ -63,7 +43,7 @@ const BookingPage = () => {
     }
 
     try {
-      // ✅ 1. Send Email
+      // ✅ Send confirmation email
       await emailjs.send('service_lfwrs5j', 'template_7ab41ra', {
         user_name: formData.name,
         user_phone: formData.phone,
@@ -73,28 +53,38 @@ const BookingPage = () => {
         user_address: formData.address,
       });
 
-      // ✅ 2. Save to MongoDB
-      const dbRes = await fetch('http://localhost:5000/api/auth', {
+      // ✅ Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('❌ You must be logged in to book a service.');
+        return;
+      }
+
+      // ✅ Send booking to backend with token
+      const dbRes = await fetch('http://localhost:5000/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`, // Important!
         },
         body: JSON.stringify(formData),
       });
 
-      if (!dbRes.ok) throw new Error('DB Save Failed');
+      if (!dbRes.ok) {
+        const errorData = await dbRes.json();
+        throw new Error(errorData?.error || 'DB Save Failed');
+      }
 
       alert('✅ Booking submitted and saved!');
-      setFormData((prev) => ({
-        name: prev.name,
+      setFormData({
+        name: '',
         phone: '',
-        email: prev.email,
+        email: '',
         service: '',
         date: '',
         address: '',
         captcha: '',
-      }));
+      });
       generateCaptcha();
     } catch (err) {
       console.error('❌ Failed to submit booking:', err);

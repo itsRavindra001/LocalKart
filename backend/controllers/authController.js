@@ -1,71 +1,76 @@
-const User = require('../models/user');
-const bcrypt = require('bcryptjs');
+const Booking = require('../models/Booking');
+const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
-// ───────────────────────── Signup ─────────────────────────
+// ───────────── Signup ─────────────
 exports.signup = async (req, res) => {
-  const { name, username, email, dob, password, role } = req.body;
-
-  if (!name || !username || !email || !dob || !password || !role) {
-    return res.status(400).json({ message: 'Please fill out all required fields.' });
-  }
-
   try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res.status(400).json({ message: 'User with this email already exists.' });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      name,
-      username,
-      email,
-      dob,
-      password: hashedPassword,
-      role,
-    });
-
-    await newUser.save();
-
-    res.status(201).json({ message: 'User registered successfully' });
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).json({ message: 'User created successfully', user });
   } catch (err) {
-    console.error('Signup error:', err.message);
-    res.status(500).json({ message: 'Signup failed', error: err.message });
+    res.status(400).json({ error: err.message });
   }
 };
 
-// ───────────────────────── Login ─────────────────────────
+// ───────────── Login ─────────────
 exports.login = async (req, res) => {
   const { username, password } = req.body;
-
-  if (!username || !password)
-    return res.status(400).json({ message: 'Please provide both username and password.' });
-
   try {
     const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user || user.password !== password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-
+    // 🔐 Generate token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: '1d',
     });
 
-    res.status(200).json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
-    });
+    res.json({ message: 'Login successful', user, token });
   } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ message: 'Login failed', error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// ───────────── Submit Booking ─────────────
+exports.submitBooking = async (req, res) => {
+  try {
+    const userId = req.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: Missing user ID' });
+    }
+
+    const newBooking = new Booking({
+      ...req.body,
+      userId, // ✅ Attach user ID from token
+    });
+
+    await newBooking.save();
+    res.status(201).json({ message: 'Booking saved', booking: newBooking });
+  } catch (err) {
+    console.error('❌ Booking save error:', err);
+    res.status(500).json({ error: 'Failed to save booking' });
+  }
+};
+
+// ───────────── Get Profile ─────────────
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user?.id || req.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: 'Profile fetch error' });
+  }
+};
+
+// ───────────── Get All Bookings ─────────────
+exports.getBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find({});
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch bookings' });
   }
 };

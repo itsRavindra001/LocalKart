@@ -10,23 +10,29 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ CORS Configuration
+// ✅ Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // 🔑 Match frontend origin
-  credentials: true                // 🔑 Allow cookies/auth headers
+  origin: 'http://localhost:5173', // Frontend URL
+  credentials: true,               // Allow sending cookies (if needed)
 }));
-
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/bookings', bookingRoutes); // Correct path for bookings
+// ✅ Routes
+app.use('/api/auth', authRoutes);        // Login/Signup/Profile
+app.use('/api/bookings', bookingRoutes); // Public booking submission route
 
 // ✅ MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
   .then(() => {
     console.log('✅ MongoDB Connected');
-    app.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running at http://localhost:${PORT}`);
+    });
   })
-  .catch((err) => console.error('❌ MongoDB Error:', err.message));
+  .catch((err) => {
+    console.error('❌ MongoDB Connection Error:', err.message);
+  });
