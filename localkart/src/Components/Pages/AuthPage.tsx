@@ -1,25 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../Contexts/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../Contexts/AuthContext";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const AuthPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const isLogin = location.pathname === '/login';
+  const isLogin = location.pathname === "/login";
 
   const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    dob: '',
-    password: '',
-    confirmPassword: '',
-    captcha: '',
-    role: '',
+    name: "",
+    username: "",
+    email: "",
+    dob: "",
+    password: "",
+    confirmPassword: "",
+    captcha: "",
+    role: "",
   });
 
-  const [captcha, setCaptcha] = useState({ question: '', answer: 0 });
+  const [captcha, setCaptcha] = useState({ question: "", answer: 0 });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -31,28 +31,41 @@ const AuthPage = () => {
     const a = Math.floor(Math.random() * 10) + 1;
     const b = Math.floor(Math.random() * 10) + 1;
     setCaptcha({ question: `What is ${a} + ${b}?`, answer: a + b });
-    setFormData((prev) => ({ ...prev, captcha: '' }));
+    setFormData((prev) => ({ ...prev, captcha: "" }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const redirectByRole = (role) => {
+    const r = role?.toLowerCase();
+    if (r === "admin") navigate("/admin/dashboard");
+    else if (r === "provider") navigate("/provider/dashboard");
+    else navigate("/user/dashboard");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (parseInt(formData.captcha) !== captcha.answer) {
-      alert('Incorrect human verification answer.');
+      alert("Incorrect human verification answer.");
       generateCaptcha();
       return;
     }
 
     try {
       if (isLogin) {
-        // LOGIN
-        const res = await fetch('http://localhost:5000/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        if (!formData.username || !formData.password) {
+          alert("Please enter username and password.");
+          return;
+        }
+
+        const res = await fetch("http://localhost:5000/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             username: formData.username,
             password: formData.password,
@@ -60,23 +73,20 @@ const AuthPage = () => {
         });
 
         const data = await res.json();
+        console.log("Login API response:", data);
 
         if (res.ok && data.token && data.user) {
-          alert('Login successful!');
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('username', data.user.username);
-          login({
-            username: data.user.username,
-            email: data.user.email,
-            role: data.user.role,
-          });
-          navigate('/');
-        } else {
-          alert(data.message || 'Login failed');
-        }
+          alert("Login successful!");
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("username", data.user.username);
+          localStorage.setItem("role", data.user.role); // store role for AdminRoutes
 
+          login(data.user);
+          redirectByRole(data.user.role);
+        } else {
+          alert(data.error || data.message || "Login failed");
+        }
       } else {
-        // SIGNUP
         if (
           !formData.name ||
           !formData.username ||
@@ -86,40 +96,40 @@ const AuthPage = () => {
           !formData.confirmPassword ||
           !formData.role
         ) {
-          alert('Please fill out all fields.');
+          alert("Please fill out all fields.");
           return;
         }
 
         if (formData.password !== formData.confirmPassword) {
-          alert('Passwords do not match!');
+          alert("Passwords do not match!");
           return;
         }
 
-        const res = await fetch('http://localhost:5000/api/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+        const res = await fetch("http://localhost:5000/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name,
+            username: formData.username,
+            email: formData.email,
+            dob: formData.dob,
+            password: formData.password,
+            role: formData.role,
+          }),
         });
 
         const data = await res.json();
 
-        if (res.ok && data.token && data.user) {
-          alert('Signup successful!');
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('username', data.user.username);
-          login({
-            username: data.user.username,
-            email: data.user.email,
-            role: data.user.role,
-          });
-          navigate('/');
+        if (res.ok && data.user) {
+          alert("Signup successful! Please login now.");
+          navigate("/login");
         } else {
-          alert(data.message || 'Signup failed');
+          alert(data.error || data.message || "Signup failed");
         }
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Something went wrong. Please try again later.');
+      console.error("Error:", error);
+      alert("Something went wrong. Please try again later.");
     }
   };
 
@@ -138,7 +148,7 @@ const AuthPage = () => {
         className="w-full md:w-1/2 max-w-md bg-white p-8 shadow-lg rounded-md"
       >
         <h2 className="text-2xl font-bold mb-6 text-center text-blue-600">
-          {isLogin ? 'Login to LocalKart' : 'Create your LocalKart account'}
+          {isLogin ? "Login to LocalKart" : "Create your LocalKart account"}
         </h2>
 
         <input
@@ -193,9 +203,12 @@ const AuthPage = () => {
                 required
                 className="w-full p-3 border border-gray-300 rounded"
               >
-                <option value="" disabled>Select your role</option>
+                <option value="" disabled>
+                  Select your role
+                </option>
                 <option value="client">Client</option>
                 <option value="provider">Service Provider</option>
+                <option value="admin">Admin</option>
               </select>
             </div>
           </>
@@ -203,7 +216,7 @@ const AuthPage = () => {
 
         <div className="relative mb-4">
           <input
-            type={showPassword ? 'text' : 'password'}
+            type={showPassword ? "text" : "password"}
             name="password"
             placeholder="Password"
             value={formData.password}
@@ -213,16 +226,16 @@ const AuthPage = () => {
           />
           <span
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-600"
+            className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-600 select-none"
           >
-            {showPassword ? '🙈' : '👁️'}
+            {showPassword ? "🙈" : "👁️"}
           </span>
         </div>
 
         {!isLogin && (
           <div className="relative mb-4">
             <input
-              type={showConfirmPassword ? 'text' : 'password'}
+              type={showConfirmPassword ? "text" : "password"}
               name="confirmPassword"
               placeholder="Confirm Password"
               value={formData.confirmPassword}
@@ -232,9 +245,9 @@ const AuthPage = () => {
             />
             <span
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-600"
+              className="absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer text-gray-600 select-none"
             >
-              {showConfirmPassword ? '🙈' : '👁️'}
+              {showConfirmPassword ? "🙈" : "👁️"}
             </span>
           </div>
         )}
@@ -247,7 +260,7 @@ const AuthPage = () => {
             </label>
             <span
               className="text-blue-600 hover:underline cursor-pointer"
-              onClick={() => navigate('/forgot-password')}
+              onClick={() => navigate("/forgot-password")}
             >
               Forgot Password?
             </span>
@@ -273,16 +286,16 @@ const AuthPage = () => {
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
         >
-          {isLogin ? 'Login' : 'Signup'}
+          {isLogin ? "Login" : "Signup"}
         </button>
 
         <p className="text-center mt-4 text-sm">
-          {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
+          {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
           <span
-            onClick={() => navigate(isLogin ? '/signup' : '/login')}
+            onClick={() => navigate(isLogin ? "/signup" : "/login")}
             className="text-blue-600 font-semibold cursor-pointer hover:underline"
           >
-            {isLogin ? 'Signup here' : 'Login here'}
+            {isLogin ? "Signup here" : "Login here"}
           </span>
         </p>
       </form>

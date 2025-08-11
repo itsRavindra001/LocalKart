@@ -41,12 +41,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('userInfo');
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const storedUser = localStorage.getItem('userInfo');
 
-    if (storedUser && loggedIn) {
-      setUserInfo(JSON.parse(storedUser));
-      setIsLoggedIn(true);
+    if (loggedIn && storedUser && storedUser !== 'undefined') {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUserInfo(parsedUser);
+        setIsLoggedIn(true);
+      } catch (error) {
+        console.error('Error parsing stored userInfo:', error);
+        localStorage.removeItem('userInfo'); // clear bad data
+      }
     }
   }, []);
 
