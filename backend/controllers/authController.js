@@ -3,18 +3,20 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-// ───────────── Signup ─────────────
+/* ───────────── Signup ───────────── */
 exports.signup = async (req, res) => {
   try {
-    const { name, username, email, dob, password, role } = req.body;
+    const { name, username, email, dob, password, role, serviceType } = req.body;
 
-    // Check if username or email already exists
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
       return res.status(400).json({ error: 'Username or email already taken' });
     }
 
-    // Hash the password before saving
+    if (role === 'provider' && !serviceType) {
+      return res.status(400).json({ error: 'Service type is required for providers' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = new User({
@@ -23,14 +25,13 @@ exports.signup = async (req, res) => {
       email,
       dob,
       password: hashedPassword,
-      role: role === 'provider' ? 'provider' : 'client', // Only 'provider' or 'client' allowed here
+      role: role === 'provider' ? 'provider' : 'client',
+      serviceType: role === 'provider' ? serviceType : undefined
     });
 
     await user.save();
 
-    // Remove password from response
     const { password: _, ...safeUser } = user.toObject();
-
     res.status(201).json({ message: 'User created successfully', user: safeUser });
   } catch (err) {
     console.error('❌ Signup error:', err);
@@ -38,35 +39,29 @@ exports.signup = async (req, res) => {
   }
 };
 
-// ───────────── Login ─────────────
+/* ───────────── Login ───────────── */
 exports.login = async (req, res) => {
   const { username, password } = req.body;
   try {
     const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // Compare hashed password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
+    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // Generate token with role included
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, role: user.role, serviceType: user.serviceType },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
-    // Prepare safe user object for response
     const safeUser = {
       id: user._id,
       name: user.name,
       username: user.username,
       email: user.email,
       role: user.role,
+      serviceType: user.serviceType || null
     };
 
     res.json({ message: 'Login successful', user: safeUser, token });
@@ -76,12 +71,12 @@ exports.login = async (req, res) => {
   }
 };
 
-// Middleware helper to extract user from JWT token
+/* ───────────── Middleware ───────────── */
 exports.authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'] || req.cookies.token;
-  const token = authHeader && authHeader.startsWith('Bearer ')
-    ? authHeader.split(' ')[1]
-    : authHeader;
+  const rawAuth = req.headers['authorization'] || req.cookies.token;
+  const token = rawAuth && rawAuth.startsWith('Bearer ')
+    ? rawAuth.split(' ')[1]
+    : rawAuth;
 
   if (!token) {
     return res.status(401).json({ error: 'No token, authorization denied' });
@@ -89,45 +84,72 @@ exports.authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // id and role
+    req.user = {
+      id: decoded.id || decoded._id || decoded.userId || null,
+      role: decoded.role || null,
+      serviceType: decoded.serviceType || null
+    };
+
+    if (!req.user.id) {
+      console.warn('⚠️ Token verified but missing user ID:', decoded);
+    }
+
     next();
   } catch (err) {
     console.error('❌ Token verification error:', err);
-    return res.status(401).json({ error: 'Token is not valid' });
+    return res.status(401).json({ error: 'Token is not valid or expired' });
   }
 };
 
-// ───────────── Submit Booking ─────────────
+/* ───────────── Submit Booking ───────────── */
 exports.submitBooking = async (req, res) => {
   try {
-    // User id comes from the authenticateToken middleware
+    console.log('📥 Booking request body:', req.body);
+    console.log('👤 Authenticated user:', req.user);
+
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: Missing user ID' });
     }
 
+    const { service, date, address } = req.body;
+    if (!service || !date || !address) {
+      return res.status(400).json({ error: 'Missing required fields (service, date, address)' });
+    }
+
+    // Find the provider offering this service
+    const provider = await User.findOne({ role: 'provider', serviceType: service });
+    if (!provider) {
+      return res.status(404).json({ error: 'No provider found for this service' });
+    }
+
     const newBooking = new Booking({
-      ...req.body,
-      userId, // Attach user ID from token
+      service,
+      date,
+      address,
+      clientId: userId,         // store as clientId (consistent naming)
+      providerId: provider._id
     });
 
     await newBooking.save();
+    console.log('✅ Booking saved with ID:', newBooking._id);
+
     res.status(201).json({ message: 'Booking saved', booking: newBooking });
   } catch (err) {
     console.error('❌ Booking save error:', err);
-    res.status(500).json({ error: 'Failed to save booking' });
+    res.status(500).json({ error: err.message || 'Failed to save booking' });
   }
 };
 
-// ───────────── Get Profile ─────────────
+/* ───────────── Get Profile ───────────── */
 exports.getProfile = async (req, res) => {
   try {
     const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
     const user = await User.findById(userId).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
+
     res.json(user);
   } catch (err) {
     console.error('❌ Profile fetch error:', err);
@@ -135,14 +157,37 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// ───────────── Get All Bookings ─────────────
+/* ───────────── Get All Bookings (Admin) ───────────── */
 exports.getBookings = async (req, res) => {
   try {
-    // Optional: you can limit bookings based on user role or user ID
-    const bookings = await Booking.find({});
+    const bookings = await Booking.find({})
+      .populate('clientId', 'name email')
+      .populate('providerId', 'name email serviceType');
+
     res.json(bookings);
   } catch (err) {
     console.error('❌ Get bookings error:', err);
     res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+};
+
+/* ───────────── Get Provider's Bookings ───────────── */
+exports.getProviderBookings = async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    const provider = await User.findOne({ username, role: 'provider' });
+    if (!provider) {
+      return res.status(404).json({ error: 'Provider not found' });
+    }
+
+    const bookings = await Booking.find({ providerId: provider._id })
+      .populate('clientId', 'name email phone')
+      .sort({ createdAt: -1 });
+
+    res.json(bookings);
+  } catch (err) {
+    console.error('❌ Error fetching provider bookings:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 };

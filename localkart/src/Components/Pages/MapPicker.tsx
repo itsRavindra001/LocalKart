@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -6,42 +6,64 @@ import {
   useMap,
   useMapEvents,
   LayersControl,
-} from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-type Props = { onLocationSelect: (address: string) => void };
+interface MapPickerProps {
+  onLocationSelect: (address: string) => void;
+  initialAddress?: string;
+  disabled?: boolean;
+}
 
 const markerIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/447/447031.png',
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/447/447031.png",
   iconSize: [35, 45],
   iconAnchor: [17, 45],
 });
 
-const MapPicker: React.FC<Props> = ({ onLocationSelect }) => {
+const MapPicker: React.FC<MapPickerProps> = ({
+  onLocationSelect,
+  initialAddress,
+  disabled = false,
+}) => {
   const [position, setPosition] = useState<[number, number]>([28.6139, 77.209]);
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Autofocus the search input
     searchInputRef.current?.focus();
 
-    // Try to get user's current location on mount
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        ({ coords }) => {
-          const { latitude, longitude } = coords;
-          setPosition([latitude, longitude]);
-          reverseGeocode(latitude, longitude);
-        },
-        () => {
-          // fallback to default if denied
-          console.warn('Geolocation denied or failed');
-        }
-      );
+    // If initialAddress is provided, try geocoding it
+    if (initialAddress) {
+      fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          initialAddress
+        )}`
+      )
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.length) {
+            const lat = +d[0].lat,
+              lon = +d[0].lon;
+            setPosition([lat, lon]);
+            onLocationSelect(d[0].display_name || initialAddress);
+          }
+        })
+        .catch(() => console.warn("Failed to geocode initial address"));
+    } else {
+      // Otherwise try to get user's current location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          ({ coords }) => {
+            setPosition([coords.latitude, coords.longitude]);
+            reverseGeocode(coords.latitude, coords.longitude);
+          },
+          () => console.warn("Geolocation denied or failed")
+        );
+      }
     }
-  }, []);
+  }, [initialAddress]);
 
   const reverseGeocode = (lat: number, lon: number) =>
     fetch(
@@ -60,33 +82,33 @@ const MapPicker: React.FC<Props> = ({ onLocationSelect }) => {
     )
       .then((r) => r.json())
       .then((d) => {
-        if (!d.length) return alert('Location not found');
+        if (!d.length) return alert("Location not found");
         const lat = +d[0].lat,
           lon = +d[0].lon;
         setPosition([lat, lon]);
         onLocationSelect(d[0].display_name || searchText);
       })
-      .catch(() => alert('Search error'));
+      .catch(() => alert("Search error"));
   };
 
   const handleCurrent = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation not supported');
+      alert("Geolocation not supported");
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setPosition([coords.latitude, coords.longitude]);
         reverseGeocode(coords.latitude, coords.longitude);
       },
-      () => alert('Unable to get location')
+      () => alert("Unable to get location")
     );
   };
 
   const LocationMarker = () => {
     useMapEvents({
       click(e) {
+        if (disabled) return; // prevent marker move when disabled
         const { lat, lng } = e.latlng;
         setPosition([lat, lng]);
         reverseGeocode(lat, lng);
@@ -110,17 +132,28 @@ const MapPicker: React.FC<Props> = ({ onLocationSelect }) => {
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search location…"
+          disabled={disabled}
           className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-blue-500"
         />
         <button
           onClick={handleSearch}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition"
+          disabled={disabled}
+          className={`px-4 py-2 rounded-md text-sm text-white transition ${
+            disabled
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          }`}
         >
           🔍 Search
         </button>
         <button
           onClick={handleCurrent}
-          className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 transition"
+          disabled={disabled}
+          className={`px-4 py-2 rounded-md text-sm text-white transition ${
+            disabled
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
         >
           📍 Locate Me
         </button>
@@ -131,8 +164,8 @@ const MapPicker: React.FC<Props> = ({ onLocationSelect }) => {
         <MapContainer
           center={position}
           zoom={13}
-          scrollWheelZoom
-          style={{ height: '100%', width: '100%' }}
+          scrollWheelZoom={!disabled}
+          style={{ height: "100%", width: "100%" }}
         >
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name="Street">

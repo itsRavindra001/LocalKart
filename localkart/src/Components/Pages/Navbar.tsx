@@ -1,29 +1,31 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../Contexts/AuthContext';
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../Contexts/AuthContext";
 
 const Navbar = () => {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
   const servicesRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, logout, userInfo } = useAuth();
 
   const services = [
-    { name: 'AC Repair', path: 'ac-repair' },
-    { name: 'Electrician', path: 'electrician' },
-    { name: 'Plumbing', path: 'plumbing' },
-    { name: 'Salon at Home', path: 'salon' },
-    { name: 'House Cleaning', path: 'cleaning' },
-    { name: 'Painting', path: 'painting' },
-    { name: 'Carpentry', path: 'carpentry' },
-    { name: 'Groceries', path: 'groceries' },
-    { name: 'Tutors', path: 'tutors' },
-    { name: 'Tailors', path: 'tailors' },
+    { name: "AC Repair", path: "ac-repair" },
+    { name: "Electrician", path: "electrician" },
+    { name: "Plumbing", path: "plumbing" },
+    { name: "Salon at Home", path: "salon" },
+    { name: "House Cleaning", path: "cleaning" },
+    { name: "Painting", path: "painting" },
+    { name: "Carpentry", path: "carpentry" },
+    { name: "Groceries", path: "groceries" },
+    { name: "Tutors", path: "tutors" },
+    { name: "Tailors", path: "tailors" },
   ];
 
   useEffect(() => {
@@ -35,38 +37,44 @@ const Navbar = () => {
         setDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const match = services.find(service =>
+    const match = services.find((service) =>
       service.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     if (match) {
       navigate(`/services/${match.path}`);
-      setSearchTerm('');
+      setSearchTerm("");
       setServicesOpen(false);
       setMobileMenuOpen(false);
     } else {
-      alert('Service not found.');
+      alert("Service not found.");
     }
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
     setDropdownOpen(false);
   };
 
-  const isAdmin = userInfo?.role === 'admin';
+  // Roles
+  const isAdmin = userInfo?.role === "admin";
+  const isProvider = userInfo?.role === "provider";
+  const minimalNavbar = isAdmin || isProvider;
 
   return (
     <nav className="bg-white shadow sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition">
+        <Link
+          to="/"
+          className="flex items-center gap-2 hover:opacity-90 transition"
+        >
           <img
             src="https://img.freepik.com/free-vector/hand-drawn-shop-local-logo-design_23-2149575769.jpg?semt=ais_hybrid&w=740"
             alt="LocalKart Logo"
@@ -75,8 +83,8 @@ const Navbar = () => {
           <h1 className="text-2xl font-bold text-gray-800">LocalKart</h1>
         </Link>
 
-        {/* ADMIN VIEW — Only logo + user info */}
-        {isAdmin ? (
+        {/* Minimal Navbar for Admin & Provider */}
+        {minimalNavbar ? (
           <div className="flex items-center gap-4" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -87,9 +95,16 @@ const Navbar = () => {
             {dropdownOpen && (
               <div className="absolute right-4 top-16 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
                 <div className="p-4 text-sm text-gray-800 space-y-1">
-                  <p><strong>Username:</strong> {userInfo?.username || 'N/A'}</p>
-                  <p><strong>Email:</strong> {userInfo?.email || 'N/A'}</p>
-                  <p><strong>Role:</strong> {userInfo?.role || 'User'}</p>
+                  <p>
+                    <strong>Username:</strong>{" "}
+                    {userInfo?.username || "N/A"}
+                  </p>
+                  <p>
+                    <strong>Email:</strong> {userInfo?.email || "N/A"}
+                  </p>
+                  <p>
+                    <strong>Role:</strong> {userInfo?.role || "User"}
+                  </p>
                 </div>
                 <div className="border-t p-2">
                   <button
@@ -103,11 +118,11 @@ const Navbar = () => {
             )}
           </div>
         ) : (
-          /* NON-ADMIN FULL NAVBAR */
+          /* Full Navbar for normal users/guests */
           <>
             <button
               className="md:hidden text-2xl"
-              onClick={() => setMobileMenuOpen(prev => !prev)}
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
             >
               ☰
             </button>
@@ -115,21 +130,30 @@ const Navbar = () => {
             <div className="hidden md:flex gap-6 text-gray-800 font-medium items-center">
               <Link
                 to="/"
-                className={`${location.pathname === '/' ? 'text-blue-600 font-semibold' : ''} hover:text-blue-600`}
+                className={`${
+                  location.pathname === "/"
+                    ? "text-blue-600 font-semibold"
+                    : ""
+                } hover:text-blue-600`}
               >
                 Home
               </Link>
 
+              {/* Services Dropdown */}
               <div className="relative" ref={servicesRef}>
                 <button
-                  onClick={() => setServicesOpen(prev => !prev)}
-                  className={`flex items-center gap-1 hover:text-blue-600 transition ${location.pathname.startsWith('/services') ? 'text-blue-600 font-semibold' : ''}`}
+                  onClick={() => setServicesOpen((prev) => !prev)}
+                  className={`flex items-center gap-1 hover:text-blue-600 transition ${
+                    location.pathname.startsWith("/services")
+                      ? "text-blue-600 font-semibold"
+                      : ""
+                  }`}
                 >
                   Services ▾
                 </button>
                 {servicesOpen && (
                   <ul className="absolute left-0 top-full mt-2 bg-white text-gray-800 border border-gray-200 shadow-lg rounded w-56 z-50 max-h-96 overflow-y-auto">
-                    {services.map(service => (
+                    {services.map((service) => (
                       <li key={service.path}>
                         <Link
                           to={`/services/${service.path}`}
@@ -144,6 +168,7 @@ const Navbar = () => {
                 )}
               </div>
 
+              {/* Search */}
               <form onSubmit={handleSearch} className="relative">
                 <input
                   type="text"
@@ -160,10 +185,15 @@ const Navbar = () => {
                 </button>
               </form>
 
+              {/* Book button if logged in */}
               {isLoggedIn && (
                 <Link
                   to="/booking"
-                  className={`px-4 py-2 rounded transition ${location.pathname === '/booking' ? 'bg-green-600 text-white' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                  className={`px-4 py-2 rounded transition ${
+                    location.pathname === "/booking"
+                      ? "bg-green-600 text-white"
+                      : "bg-green-500 text-white hover:bg-green-600"
+                  }`}
                 >
                   Book
                 </Link>
@@ -171,22 +201,35 @@ const Navbar = () => {
 
               <Link
                 to="/provider"
-                className={`${location.pathname === '/provider' ? 'text-blue-600 font-semibold' : ''} hover:text-blue-600`}
+                className={`${
+                  location.pathname === "/provider"
+                    ? "text-blue-600 font-semibold"
+                    : ""
+                } hover:text-blue-600`}
               >
                 Become a Provider
               </Link>
 
+              {/* Auth buttons */}
               {!isLoggedIn ? (
                 <>
                   <Link
                     to="/login"
-                    className={`px-4 py-2 rounded transition ${location.pathname === '/login' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                    className={`px-4 py-2 rounded transition ${
+                      location.pathname === "/login"
+                        ? "bg-blue-600 text-white"
+                        : "bg-blue-500 text-white hover:bg-blue-600"
+                    }`}
                   >
                     Login
                   </Link>
                   <Link
                     to="/signup"
-                    className={`px-4 py-2 rounded border ${location.pathname === '/signup' ? 'bg-blue-50 text-blue-600 border-blue-500' : 'bg-white text-blue-600 border-blue-500 hover:bg-blue-50'}`}
+                    className={`px-4 py-2 rounded border ${
+                      location.pathname === "/signup"
+                        ? "bg-blue-50 text-blue-600 border-blue-500"
+                        : "bg-white text-blue-600 border-blue-500 hover:bg-blue-50"
+                    }`}
                   >
                     Signup
                   </Link>
@@ -202,9 +245,16 @@ const Navbar = () => {
                   {dropdownOpen && (
                     <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
                       <div className="p-4 text-sm text-gray-800 space-y-1">
-                        <p><strong>Username:</strong> {userInfo?.username || 'N/A'}</p>
-                        <p><strong>Email:</strong> {userInfo?.email || 'N/A'}</p>
-                        <p><strong>Role:</strong> {userInfo?.role || 'User'}</p>
+                        <p>
+                          <strong>Username:</strong>{" "}
+                          {userInfo?.username || "N/A"}
+                        </p>
+                        <p>
+                          <strong>Email:</strong> {userInfo?.email || "N/A"}
+                        </p>
+                        <p>
+                          <strong>Role:</strong> {userInfo?.role || "User"}
+                        </p>
                       </div>
                       <div className="border-t p-2">
                         <button

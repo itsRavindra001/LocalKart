@@ -6,7 +6,8 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
-const User = require('./models/User'); // Import User model
+const providerRoutes = require('./routes/providerRoutes'); // ✅ NEW
+const User = require('./models/User');
 const bcrypt = require('bcrypt');
 
 const app = express();
@@ -21,8 +22,9 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ✅ Routes
-app.use('/api/auth', authRoutes);        // Login/Signup/Profile
-app.use('/api/bookings', bookingRoutes); // Public booking submission route
+app.use('/api/auth', authRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/providers', providerRoutes); // ✅ Mount provider routes
 
 // ✅ Function to create default admin if not exists
 const createDefaultAdmin = async () => {
@@ -54,7 +56,7 @@ mongoose.connect(process.env.MONGO_URI, {
 })
   .then(async () => {
     console.log('✅ MongoDB Connected');
-    await createDefaultAdmin(); // Ensure admin is created before starting server
+    await createDefaultAdmin();
     app.listen(PORT, () => {
       console.log(`🚀 Server running at http://localhost:${PORT}`);
     });

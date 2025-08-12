@@ -1,11 +1,62 @@
-// src/Components/Pages/provider/ProviderDashboard.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../../../Contexts/AuthContext";
 
+interface ClientInfo {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+}
+
+interface Booking {
+  _id: string;
+  service: string;
+  date: string;
+  status?: string;
+  clientId?: ClientInfo; // Ensure this is the correct field for client details
+}
+
 const ProviderDashboard: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { userInfo } = useAuth();
   const username: string | null =
-    currentUser?.username || localStorage.getItem("username");
+    userInfo?.username || localStorage.getItem("username");
+  const token = localStorage.getItem("token");
+
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // State for error handling
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!username || !token) return;
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/bookings/${username}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch bookings");
+        }
+
+        const data = await res.json();
+        setBookings(data);
+      } catch (err) {
+        console.error("Error fetching bookings:", err);
+        setError(err.message); // Set error message
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, [username, token]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -18,46 +69,53 @@ const ProviderDashboard: React.FC = () => {
           services, view bookings, and track your earnings.
         </p>
 
-        {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* My Services */}
-          <div className="bg-white shadow rounded-lg p-5 hover:shadow-lg transition">
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">
-              My Services
-            </h2>
-            <p className="text-gray-500">
-              Manage and update the services you offer.
-            </p>
-            <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              View Services
-            </button>
-          </div>
+        {/* Bookings Section */}
+        <div className="bg-white shadow rounded-lg p-5 mb-6">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">
+            My Bookings
+          </h2>
+          {loading ? (
+            <p>Loading bookings...</p>
+          ) : error ? (
+            <p className="text-red-500">{error}</p> // Display error message
+          ) : bookings.length > 0 ? (
+            <ul className="divide-y divide-gray-200">
+              {bookings.map((b) => (
+                <li key={b._id} className="py-3">
+                  <p className="font-semibold">{b.service}</p>
+                  <p className="text-sm text-gray-600">
+                    Date: {new Date(b.date).toLocaleDateString()}{" "}
+                    {b.status && (
+                      <>
+                        | Status: <span className="capitalize">{b.status}</span>
+                      </>
+                    )}
+                  </p>
 
-          {/* Bookings */}
-          <div className="bg-white shadow rounded-lg p-5 hover:shadow-lg transition">
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">
-              Bookings
-            </h2>
-            <p className="text-gray-500">
-              Check and manage your upcoming bookings.
-            </p>
-            <button className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-              View Bookings
-            </button>
-          </div>
-
-          {/* Earnings */}
-          <div className="bg-white shadow rounded-lg p-5 hover:shadow-lg transition">
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">
-              Earnings
-            </h2>
-            <p className="text-gray-500">
-              Track your earnings and payment history.
-            </p>
-            <button className="mt-3 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
-              View Earnings
-            </button>
-          </div>
+                  {b.clientId && (
+                    <div className="mt-2 text-sm text-gray-500">
+                      <p>
+                        <strong>Client:</strong> {b.clientId.name} (
+                        {b.clientId.email})
+                      </p>
+                      {b.clientId.phone && (
+                        <p>
+                          <strong>Phone:</strong> {b.clientId.phone}
+                        </p>
+                      )}
+                      {b.clientId.address && (
+                        <p>
+                          <strong>Address:</strong> {b.clientId.address}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No bookings found for your services.</p>
+          )}
         </div>
       </div>
     </div>

@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../Contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import confetti from "canvas-confetti";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
 
-const AuthPage = () => {
+const serviceSuggestions = [
+  { name: "AC Repair", path: "ac-repair" },
+  { name: "Electrician", path: "electrician" },
+  { name: "Plumbing", path: "plumbing" },
+  { name: "Salon at Home", path: "salon" },
+  { name: "House Cleaning", path: "cleaning" },
+  { name: "Painting", path: "painting" },
+  { name: "Carpentry", path: "carpentry" },
+  { name: "Groceries", path: "groceries" },
+  { name: "Tutors", path: "tutors" },
+  { name: "Tailors", path: "tailors" },
+];
+
+const AuthPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,11 +33,13 @@ const AuthPage = () => {
     confirmPassword: "",
     captcha: "",
     role: "",
+    serviceType: "",
   });
 
   const [captcha, setCaptcha] = useState({ question: "", answer: 0 });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [filteredServices, setFilteredServices] = useState(serviceSuggestions);
 
   useEffect(() => {
     generateCaptcha();
@@ -37,21 +55,59 @@ const AuthPage = () => {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    if (name === "serviceType") {
+      const filtered = serviceSuggestions.filter((s) =>
+        s.name.toLowerCase().includes(value.toLowerCase())
+      );
+
+      // ✅ Hide suggestions if exact match
+      if (serviceSuggestions.some(s => s.name.toLowerCase() === value.toLowerCase())) {
+        setFilteredServices([]);
+      } else {
+        setFilteredServices(filtered);
+      }
+    }
   };
 
-  const redirectByRole = (role) => {
-    const r = role?.toLowerCase();
+  const redirectByRole = (role: string) => {
+    const r = role.toLowerCase();
     if (r === "admin") navigate("/admin/dashboard");
     else if (r === "provider") navigate("/provider/dashboard");
-    else navigate("/user/dashboard");
+    else navigate("/"); // client → home
+  };
+
+  const showSuccessPopup = async (role: string) => {
+    confetti({ particleCount: 150, spread: 70, origin: { x: 0 } });
+    confetti({ particleCount: 150, spread: 70, origin: { x: 1 } });
+
+    await Swal.fire({
+      title: "🎉 Login Successful!",
+      text: `Welcome back, ${role}!`,
+      icon: "success",
+      timer: 1200,
+      showConfirmButton: false,
+    });
+
+    redirectByRole(role);
+  };
+
+  const showErrorPopup = (message: string) => {
+    Swal.fire({
+      title: "❌ Login Failed",
+      text: message,
+      icon: "error",
+      confirmButtonColor: "#d33",
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (parseInt(formData.captcha) !== captcha.answer) {
-      alert("Incorrect human verification answer.");
+      showErrorPopup("Incorrect human verification answer.");
       generateCaptcha();
       return;
     }
@@ -59,7 +115,7 @@ const AuthPage = () => {
     try {
       if (isLogin) {
         if (!formData.username || !formData.password) {
-          alert("Please enter username and password.");
+          showErrorPopup("Please enter username and password.");
           return;
         }
 
@@ -73,20 +129,18 @@ const AuthPage = () => {
         });
 
         const data = await res.json();
-        console.log("Login API response:", data);
 
         if (res.ok && data.token && data.user) {
-          alert("Login successful!");
           localStorage.setItem("token", data.token);
           localStorage.setItem("username", data.user.username);
-          localStorage.setItem("role", data.user.role); // store role for AdminRoutes
-
+          localStorage.setItem("role", data.user.role);
           login(data.user);
-          redirectByRole(data.user.role);
+          await showSuccessPopup(data.user.role);
         } else {
-          alert(data.error || data.message || "Login failed");
+          showErrorPopup(data.error || "Invalid username or password.");
         }
       } else {
+        // signup
         if (
           !formData.name ||
           !formData.username ||
@@ -96,12 +150,17 @@ const AuthPage = () => {
           !formData.confirmPassword ||
           !formData.role
         ) {
-          alert("Please fill out all fields.");
+          showErrorPopup("Please fill out all fields.");
+          return;
+        }
+
+        if (formData.role === "provider" && !formData.serviceType) {
+          showErrorPopup("Please specify the service you provide.");
           return;
         }
 
         if (formData.password !== formData.confirmPassword) {
-          alert("Passwords do not match!");
+          showErrorPopup("Passwords do not match!");
           return;
         }
 
@@ -115,21 +174,27 @@ const AuthPage = () => {
             dob: formData.dob,
             password: formData.password,
             role: formData.role,
+            serviceType:
+              formData.role === "provider" ? formData.serviceType : undefined,
           }),
         });
 
         const data = await res.json();
 
         if (res.ok && data.user) {
-          alert("Signup successful! Please login now.");
-          navigate("/login");
+          Swal.fire({
+            title: "✅ Signup Successful!",
+            text: "Please login to continue.",
+            icon: "success",
+            confirmButtonColor: "#3085d6",
+          }).then(() => navigate("/login"));
         } else {
-          alert(data.error || data.message || "Signup failed");
+          showErrorPopup(data.error || "Signup failed.");
         }
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Something went wrong. Please try again later.");
+      showErrorPopup("Something went wrong. Please try again later.");
     }
   };
 
@@ -172,7 +237,6 @@ const AuthPage = () => {
               required
               className="w-full p-3 mb-4 border border-gray-300 rounded"
             />
-
             <input
               type="email"
               name="email"
@@ -182,7 +246,6 @@ const AuthPage = () => {
               required
               className="w-full p-3 mb-4 border border-gray-300 rounded"
             />
-
             <input
               type="date"
               name="dob"
@@ -191,29 +254,58 @@ const AuthPage = () => {
               required
               className="w-full p-3 mb-4 border border-gray-300 rounded"
             />
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              required
+              className="w-full p-3 mb-4 border border-gray-300 rounded"
+            >
+              <option value="" disabled>
+                Select your role
+              </option>
+              <option value="client">Client</option>
+              <option value="provider">Service Provider</option>
+            </select>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Select Role
-              </label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                required
-                className="w-full p-3 border border-gray-300 rounded"
-              >
-                <option value="" disabled>
-                  Select your role
-                </option>
-                <option value="client">Client</option>
-                <option value="provider">Service Provider</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
+            {/* Provider Service Type with Suggestions */}
+            {formData.role === "provider" && (
+              <div className="mb-4 relative">
+                <input
+                  type="text"
+                  name="serviceType"
+                  placeholder="Enter the service you provide"
+                  value={formData.serviceType}
+                  onChange={handleChange}
+                  className="w-full p-3 border border-gray-300 rounded"
+                  autoComplete="off"
+                />
+                {formData.serviceType &&
+                  filteredServices.length > 0 && (
+                    <ul className="absolute z-10 bg-white border border-gray-300 w-full mt-1 rounded shadow-lg max-h-40 overflow-auto">
+                      {filteredServices.map((service) => (
+                        <li
+                          key={service.path}
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              serviceType: service.name,
+                            });
+                            setFilteredServices([]); // ✅ Hide suggestions after click
+                          }}
+                          className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                        >
+                          {service.name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </div>
+            )}
           </>
         )}
 
+        {/* Password */}
         <div className="relative mb-4">
           <input
             type={showPassword ? "text" : "password"}
@@ -232,6 +324,7 @@ const AuthPage = () => {
           </span>
         </div>
 
+        {/* Confirm Password */}
         {!isLogin && (
           <div className="relative mb-4">
             <input
@@ -252,21 +345,7 @@ const AuthPage = () => {
           </div>
         )}
 
-        {isLogin && (
-          <div className="flex justify-between items-center text-sm mb-4">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" className="form-checkbox" />
-              Remember Me
-            </label>
-            <span
-              className="text-blue-600 hover:underline cursor-pointer"
-              onClick={() => navigate("/forgot-password")}
-            >
-              Forgot Password?
-            </span>
-          </div>
-        )}
-
+        {/* Captcha */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Human Verification: {captcha.question}
@@ -282,6 +361,7 @@ const AuthPage = () => {
           />
         </div>
 
+        {/* Submit */}
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
