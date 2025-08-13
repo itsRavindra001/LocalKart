@@ -5,22 +5,32 @@ const authenticate = (req, res, next) => {
     // Get token from Authorization header or cookies
     const authHeader = req.headers.authorization || req.cookies?.token;
 
-    if (!authHeader || (typeof authHeader === 'string' && !authHeader.startsWith('Bearer '))) {
-      return res.status(401).json({ error: 'Authorization token missing or malformed' });
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization token missing' });
     }
 
-    const token = typeof authHeader === 'string'
-      ? authHeader.split(' ')[1]
-      : authHeader; // If coming from cookies
+    let token;
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else {
+      token = authHeader; // raw token from cookies
+    }
+
+    if (!token) {
+      return res.status(401).json({ error: 'Authorization token missing' });
+    }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!decoded?.id) {
-      return res.status(401).json({ error: 'Token payload invalid' });
+    // Support multiple key names (_id, userId, id)
+    const id = decoded.id || decoded._id || decoded.userId;
+
+    if (!id) {
+      return res.status(401).json({ error: 'Token payload invalid - no user ID' });
     }
 
-    req.user = decoded;      // Contains full user payload (role, serviceType, etc.)
-    req.userId = decoded.id; // For convenience
+    req.user = decoded;   // Full payload
+    req.userId = id;      // Always available
 
     next();
   } catch (err) {

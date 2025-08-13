@@ -1,17 +1,34 @@
+// BookingPage.tsx
 import React, { useEffect, useState } from "react";
 import emailjs from "@emailjs/browser";
 import MapPicker from "./MapPicker";
-
-emailjs.init("_ifDJ94YMPffwWLlN"); // Replace with your EmailJS public key
 
 interface Provider {
   _id: string;
   username: string;
   name?: string;
+  services?: string[];
 }
 
+interface FormData {
+  name: string;
+  phone: string;
+  email: string;
+  service: string;
+  date: string;
+  address: string;
+  providerId: string;
+  captcha: string;
+}
+
+const SERVICES = [
+  "Plumbing", "Electrician", "AC Repair", "Salon at Home",
+  "House Cleaning", "Painting", "Carpentry", "Pest Control",
+  "Groceries", "Tutors", "Tailors",
+];
+
 const BookingPage: React.FC = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     phone: "",
     email: "",
@@ -25,9 +42,43 @@ const BookingPage: React.FC = () => {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [captcha, setCaptcha] = useState({ question: "", answer: 0 });
   const [loadingProviders, setLoadingProviders] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
+  // Fetch logged-in user's name & email on mount (for prefill)
   useEffect(() => {
+    emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string);
     generateCaptcha();
+
+    const fetchUserDetails = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await fetch("http://localhost:5000/api/bookings/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          // If 401/403/404 or other, just skip prefill
+          console.warn("Could not fetch user details for booking prefill:", res.status);
+          return;
+        }
+
+        const data = await res.json();
+        setFormData((prev) => ({
+          ...prev,
+          name: data.name || "",
+          email: data.email || "",
+          // phone intentionally NOT auto-filled — user types it manually
+        }));
+      } catch (err) {
+        console.error("❌ Failed to load user data:", err);
+      }
+    };
+
+    fetchUserDetails();
   }, []);
 
   const generateCaptcha = () => {
@@ -37,27 +88,43 @@ const BookingPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, captcha: "" }));
   };
 
-  const fetchProviders = async (service: string) => {
-    if (!service) {
-      setProviders([]);
-      return;
+  const validateForm = (): string | null => {
+    if (!formData.name.trim()) return "Name is required";
+    if (!/^\d{10,15}$/.test(formData.phone)) return "Invalid phone number (10-15 digits)";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return "Invalid email";
+    if (!formData.service) return "Please select a service";
+    if (!formData.providerId) return "Please select a provider";
+    if (!formData.date) return "Please select a date";
+    if (new Date(formData.date).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0)) {
+      return "Date must be today or in the future";
     }
+    if (!formData.address.trim()) return "Please enter an address";
+    if (+formData.captcha !== captcha.answer) return "Incorrect CAPTCHA answer";
+    return null;
+  };
+
+  const fetchProviders = async (service: string) => {
+    setProviders([]);
+    if (!service) return;
     setLoadingProviders(true);
     try {
       const res = await fetch(
         `http://localhost:5000/api/providers?service=${encodeURIComponent(service)}`
       );
+      if (!res.ok) throw new Error(`Failed to fetch providers: ${res.status}`);
       const data = await res.json();
       setProviders(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("❌ Failed to fetch providers:", err);
-      setProviders([]);
+      console.error("Failed to fetch providers:", err);
+      setError("Failed to load providers. Please try again.");
     } finally {
       setLoadingProviders(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
@@ -67,60 +134,76 @@ const BookingPage: React.FC = () => {
     }
   };
 
+  const handleLocationSelect = (address: string) => {
+    setFormData((prev) => ({ ...prev, address }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(false);
 
-    if (+formData.captcha !== captcha.answer) {
-      alert("❌ Incorrect Captcha.");
-      return generateCaptcha();
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      setIsSubmitting(false);
+      return;
     }
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Please login to book a service");
+
+      // Send confirmation email (optional)
       await emailjs.send("service_lfwrs5j", "template_7ab41ra", {
         user_name: formData.name,
         user_phone: formData.phone,
         user_email: formData.email,
         user_service: formData.service,
-        user_date: formData.date,
+        user_date: new Date(formData.date).toLocaleDateString(),
         user_address: formData.address,
       });
 
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("❌ Please login to book a service.");
-        return;
-      }
-
+      // Save to database — include phone (from frontend)
       const dbRes = await fetch("http://localhost:5000/api/bookings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          providerId: formData.providerId,
+          service: formData.service,
+          date: new Date(formData.date).toISOString(),
+          address: formData.address,
+          phone: formData.phone, // <-- IMPORTANT: include phone
+        }),
       });
 
       if (!dbRes.ok) {
-        const errorData = await dbRes.json();
-        throw new Error(errorData?.error || "DB Save Failed");
+        const errorData = await dbRes.json().catch(() => ({}));
+        throw new Error(errorData?.error || "Booking failed");
       }
 
-      alert("✅ Booking submitted and saved!");
-      setFormData({
-        name: "",
-        phone: "",
-        email: "",
+      setSuccess(true);
+      // keep name & email, clear booking-specific fields + phone optionally
+      setFormData((prev) => ({
+        ...prev,
+        phone: "",      // user must re-enter phone next time
         service: "",
         date: "",
         address: "",
         providerId: "",
         captcha: "",
-      });
+      }));
       setProviders([]);
       generateCaptcha();
     } catch (err) {
-      console.error("❌ Failed to submit booking:", err);
-      alert("❌ Failed to submit booking.");
+      setError(err instanceof Error ? err.message : "Failed to submit booking");
+      console.error("Booking error:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -130,25 +213,57 @@ const BookingPage: React.FC = () => {
         {/* Form Section */}
         <div className="p-8 sm:p-12">
           <h2 className="text-3xl font-bold text-blue-700 mb-2">Book a Service</h2>
-          <p className="text-gray-500 text-sm mb-8">
-            Fill out the form and we’ll confirm your booking shortly.
-          </p>
+          <p className="text-gray-500 text-sm mb-8">Fill out the form and we'll confirm your booking shortly.</p>
+
+          {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">{error}</div>}
+          {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">✅ Booking submitted successfully! We'll contact you shortly.</div>}
 
           <form onSubmit={handleSubmit} className="space-y-5 text-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required className="input-field" />
-              <input name="phone" placeholder="Phone Number" value={formData.phone} onChange={handleChange} required className="input-field" />
+              {/* Name - auto-filled and readOnly */}
+              <input
+                name="name"
+                placeholder="Full Name"
+                value={formData.name}
+                readOnly
+                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
+              />
+
+              {/* Phone - manual entry */}
+              <input
+                name="phone"
+                placeholder="Phone Number"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+                disabled={isSubmitting}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              />
             </div>
 
-            <input name="email" type="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="input-field" />
+            {/* Email - auto-filled and readOnly */}
+            <input
+              name="email"
+              type="email"
+              placeholder="Email Address"
+              value={formData.email}
+              readOnly
+              className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
+            />
 
-            <select name="service" value={formData.service} onChange={handleChange} required className="input-field">
+            <select
+              name="service"
+              value={formData.service}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            >
               <option value="">Select a Service</option>
-              {[
-                "Plumbing", "Electrician", "AC Repair", "Salon at Home", "House Cleaning",
-                "Painting", "Carpentry", "Pest Control", "Groceries", "Tutors", "Tailors",
-              ].map((svc) => (
-                <option key={svc} value={svc}>{svc}</option>
+              {SERVICES.map((svc) => (
+                <option key={svc} value={svc}>
+                  {svc}
+                </option>
               ))}
             </select>
 
@@ -157,8 +272,8 @@ const BookingPage: React.FC = () => {
               value={formData.providerId}
               onChange={handleChange}
               required
-              className="input-field"
-              disabled={!formData.service || loadingProviders}
+              disabled={!formData.service || loadingProviders || isSubmitting}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select a Provider</option>
               {loadingProviders ? (
@@ -167,33 +282,63 @@ const BookingPage: React.FC = () => {
                 providers.map((provider) => (
                   <option key={provider._id} value={provider._id}>
                     {provider.name || provider.username}
+                    {provider.services && ` (${provider.services.join(", ")})`}
                   </option>
                 ))
               ) : (
-                formData.service && <option disabled>No providers found</option>
+                formData.service && <option disabled>No providers found for this service</option>
               )}
             </select>
 
-            <input name="date" type="date" value={formData.date} onChange={handleChange} required className="input-field" />
+            <input
+              name="date"
+              type="date"
+              min={new Date().toISOString().split("T")[0]}
+              value={formData.date}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            />
 
-            <textarea name="address" rows={3} placeholder="Full Address" value={formData.address} onChange={handleChange} required className="input-field resize-none" />
+            <textarea
+              name="address"
+              rows={3}
+              placeholder="Full Address"
+              value={formData.address}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 resize-none"
+            />
 
             <div>
-              <label className="block text-gray-600 font-medium mb-1">
-                Human Verification: {captcha.question}
-              </label>
-              <input name="captcha" value={formData.captcha} onChange={handleChange} placeholder="Enter your answer" required className="input-field" />
+              <label className="block text-gray-600 font-medium mb-1">Human Verification: {captcha.question}</label>
+              <input
+                name="captcha"
+                type="number"
+                value={formData.captcha}
+                onChange={handleChange}
+                placeholder="Enter your answer"
+                required
+                disabled={isSubmitting}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              />
             </div>
 
-            <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-md font-semibold hover:opacity-90 transition">
-              Book Now
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition ${isSubmitting ? "opacity-70 cursor-not-allowed" : ""}`}
+            >
+              {isSubmitting ? "Processing..." : "Book Now"}
             </button>
           </form>
         </div>
 
         {/* Map Picker Section */}
         <div className="bg-blue-50 flex items-center justify-center p-6 lg:p-10">
-          <MapPicker onLocationSelect={(addr) => setFormData((prev) => ({ ...prev, address: addr }))} />
+          <MapPicker onLocationSelect={handleLocationSelect} initialAddress={formData.address} disabled={isSubmitting} />
         </div>
       </div>
     </section>
