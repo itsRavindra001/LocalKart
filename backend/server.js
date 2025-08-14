@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -6,27 +7,45 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
-const providerRoutes = require('./routes/providerRoutes'); // ✅ NEW
+const providerRoutes = require('./routes/providerRoutes');
+const paymentRoutes = require('./routes/paymentRoutes'); // ✅ CommonJS import
 const User = require('./models/User');
 const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ Middleware
+// ===============================
+// Middleware
+// ===============================
 app.use(cors({
-  origin: 'http://localhost:5173', // Frontend URL
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // allow local dev variations
   credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Routes
+// ===============================
+// Routes
+// ===============================
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
-app.use('/api/providers', providerRoutes); // ✅ Mount provider routes
+app.use('/api/providers', providerRoutes);
+app.use('/api/payment', paymentRoutes); // ✅ Payment API routes
 
-// ✅ Function to create default admin if not exists
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date() });
+});
+
+// 404 handler for unknown API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'API route not found' });
+});
+
+// ===============================
+// Create default admin (if none exists)
+// ===============================
 const createDefaultAdmin = async () => {
   try {
     const adminExists = await User.findOne({ role: 'admin' });
@@ -40,7 +59,7 @@ const createDefaultAdmin = async () => {
         password: hashedPassword,
         role: 'admin',
       });
-      console.log('✅ Default admin created: admin / admin123');
+      console.log('✅ Default admin created: username=admin / password=admin123');
     } else {
       console.log('ℹ️ Admin account already exists.');
     }
@@ -49,11 +68,10 @@ const createDefaultAdmin = async () => {
   }
 };
 
-// ✅ MongoDB Connection & Server Start
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+// ===============================
+// MongoDB Connection & Server Start
+// ===============================
+mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
     console.log('✅ MongoDB Connected');
     await createDefaultAdmin();
@@ -63,4 +81,5 @@ mongoose.connect(process.env.MONGO_URI, {
   })
   .catch((err) => {
     console.error('❌ MongoDB Connection Error:', err.message);
+    process.exit(1); // exit if DB connection fails
   });

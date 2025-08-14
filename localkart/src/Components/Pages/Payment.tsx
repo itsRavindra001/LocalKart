@@ -3,12 +3,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useCart } from '../../Contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 import MapPicker from './MapPicker';
+import axios from 'axios';
 
 const PaymentPage = () => {
   const { cartItems, clearCart } = useCart();
   const navigate = useNavigate();
 
-  const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
   const [address, setAddress] = useState('');
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -48,7 +49,7 @@ const PaymentPage = () => {
           marker.setPosition(latLng);
           setLocation({ lat: latLng.lat(), lng: latLng.lng() });
 
-          const geocoder = new google.maps.Geocoder();
+          const geocoder = new window.google.maps.Geocoder();
           geocoder.geocode({ location: latLng }, (results, status) => {
             if (status === 'OK' && results && results.length > 0) {
               setAddress(results[0].formatted_address);
@@ -63,10 +64,72 @@ const PaymentPage = () => {
     setLocation({ lat, lng });
   };
 
-  const handleOrder = () => {
-    alert(`Order placed successfully via ${paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}!\nAddress: ${address}`);
+  const handleCODOrder = () => {
+    alert(`✅ Order placed via Cash on Delivery!\nAddress: ${address}`);
     clearCart();
     navigate('/services/groceries');
+  };
+
+  const handleOnlinePayment = async () => {
+    try {
+      // 1️⃣ Create Razorpay order from backend
+      const { data } = await axios.post(
+        '/api/payment/order',
+        { amount: total },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      // 2️⃣ Setup Razorpay checkout options
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'LocalKart',
+        description: 'Order Payment',
+        order_id: data.id,
+        handler: async (response: any) => {
+          // 3️⃣ Verify payment on backend
+          const verify = await axios.post(
+            '/api/payment/verify',
+            response,
+            { headers: { 'Content-Type': 'application/json' } }
+          );
+
+          if (verify.data.success) {
+            alert(`✅ Payment Successful!\nAddress: ${address}`);
+            clearCart();
+            navigate('/services/groceries');
+          } else {
+            alert('❌ Payment Verification Failed');
+          }
+        },
+        prefill: {
+          name: 'Test User',
+          email: 'test@example.com',
+          contact: '9999999999',
+        },
+        theme: { color: '#3399cc' },
+      };
+
+      // 4️⃣ Open Razorpay payment popup
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Something went wrong with the payment.');
+    }
+  };
+
+  const handlePlaceOrder = () => {
+    if (!location) {
+      alert('📍 Please select a delivery location.');
+      return;
+    }
+    if (paymentMethod === 'cod') {
+      handleCODOrder();
+    } else {
+      handleOnlinePayment();
+    }
   };
 
   return (
@@ -76,7 +139,9 @@ const PaymentPage = () => {
       <ul className="space-y-4">
         {cartItems.map((item) => (
           <li key={item.id} className="flex justify-between">
-            <span>{item.name} × {item.quantity}</span>
+            <span>
+              {item.name} × {item.quantity}
+            </span>
             <span>₹{item.price * item.quantity}</span>
           </li>
         ))}
@@ -105,7 +170,7 @@ const PaymentPage = () => {
               onChange={() => setPaymentMethod('online')}
               className="mr-2"
             />
-            Online (GPay, PhonePe)
+            Online (Razorpay, GPay, PhonePe)
           </label>
         </div>
       </div>
@@ -124,10 +189,10 @@ const PaymentPage = () => {
 
       <div className="text-center mt-10">
         <button
-          onClick={handleOrder}
+          onClick={handlePlaceOrder}
           className="bg-green-600 text-white px-8 py-3 rounded-full hover:bg-green-700 transition"
         >
-          Place Order
+          {paymentMethod === 'cod' ? 'Place Order' : 'Pay & Place Order'}
         </button>
       </div>
     </div>

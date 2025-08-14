@@ -182,7 +182,7 @@ exports.getProviderBookings = async (req, res) => {
     }
 
     const bookings = await Booking.find({ providerId: provider._id })
-      .populate('clientId', 'name email phone')
+      .populate('clientId', 'name email phone address')
       .sort({ createdAt: -1 });
 
     res.json(bookings);

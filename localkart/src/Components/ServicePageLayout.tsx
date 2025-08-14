@@ -1,18 +1,42 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 type Props = {
   title: string;
   description: string;
   images: string[];
   features: string[];
+  serviceType?: string; // Added serviceType prop
 };
 
-const ServicePageLayout = ({ title, description, images, features }: Props) => {
+const ServicePageLayout = ({ title, description, images, features, serviceType }: Props) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleBookNow = () => {
+    // Navigate to booking page with service details in state
+    navigate('/book', {
+      state: {
+        serviceName: title,
+        serviceDescription: description,
+        serviceType: serviceType || title.toLowerCase(), // Fallback to title if serviceType not provided
+        serviceImages: images,
+      }
+    });
+  };
+
+  // Extract service details if coming from a service selection
+  const selectedService = location.state?.selectedService;
 
   return (
     <div className="min-h-screen bg-gray-50 py-14 px-4 sm:px-8 font-sans relative z-0">
+      {/* Service Selection Banner - Only shows if coming from service selection */}
+      {selectedService && (
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-8 max-w-7xl mx-auto rounded">
+          <p className="font-medium">You've selected: <span className="font-bold">{selectedService}</span></p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-extrabold text-blue-700 mb-4">{title}</h1>
@@ -43,19 +67,26 @@ const ServicePageLayout = ({ title, description, images, features }: Props) => {
       </div>
 
       {/* CTA Buttons */}
-      <div className="flex justify-between items-center max-w-4xl mx-auto mt-16 px-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center max-w-4xl mx-auto mt-16 px-4 gap-4">
         <button
-          onClick={() => navigate('/book')}
-          className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-medium"
+          onClick={handleBookNow}
+          className="w-full sm:w-auto inline-flex items-center justify-center bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-medium"
         >
-          📅 Book Now
+          <span className="mr-2">📅</span> Book {title} Service
+        </button>
+
+        <button
+          onClick={() => navigate('/services')}
+          className="w-full sm:w-auto inline-flex items-center justify-center bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition font-medium"
+        >
+          <span className="mr-2">🔄</span> View Other Services
         </button>
 
         <button
           onClick={() => navigate('/')}
-          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
+          className="w-full sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
         >
-          🔙 Back to Home
+          <span className="mr-2">🏠</span> Back to Home
         </button>
       </div>
     </div>
