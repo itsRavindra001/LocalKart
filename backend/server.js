@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,6 +8,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const providerRoutes = require('./routes/providerRoutes');
+const paymentRoutes = require('./routes/paymentRoutes'); // ✅ CommonJS import
 const User = require('./models/User');
 const bcrypt = require('bcrypt');
 
@@ -29,6 +31,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/providers', providerRoutes);
+app.use('/api/payment', paymentRoutes); // ✅ Payment API routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
