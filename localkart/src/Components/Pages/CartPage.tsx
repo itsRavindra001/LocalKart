@@ -81,7 +81,7 @@ const CartPage: React.FC = () => {
   return (
     <div>
       <Cart
-        cartItems={cartItems}
+        cartitems={cartItems}
         onClose={handleClose}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}

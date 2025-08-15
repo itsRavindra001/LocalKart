@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:5000', // Backend server
+        //  target: 'http://localcart-ujab.onrender.com/', // Backend server
         changeOrigin: true,
         secure: false,
       },
