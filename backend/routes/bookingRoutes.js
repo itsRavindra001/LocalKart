@@ -47,7 +47,7 @@ router.get("/me", authenticateToken, async (req, res) => {
 router.post("/create-order", authenticateToken, async (req, res) => {
   try {
     const { service } = req.body;
-
+      console.log(req.body);  
     // Validate service
     if (!service || !servicePrices[service]) {
       return res.status(400).json({ error: "Invalid or missing service" });

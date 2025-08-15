@@ -1,3 +1,4 @@
+// src/Components/Pages/AuthPage.tsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../Contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -63,7 +64,6 @@ const AuthPage: React.FC = () => {
         s.name.toLowerCase().includes(value.toLowerCase())
       );
 
-      // ✅ Hide suggestions if exact match
       if (serviceSuggestions.some(s => s.name.toLowerCase() === value.toLowerCase())) {
         setFilteredServices([]);
       } else {
@@ -76,7 +76,7 @@ const AuthPage: React.FC = () => {
     const r = role.toLowerCase();
     if (r === "admin") navigate("/admin/dashboard");
     else if (r === "provider") navigate("/provider/dashboard");
-    else navigate("/"); // client → home
+    else navigate("/");
   };
 
   const showSuccessPopup = async (role: string) => {
@@ -140,7 +140,6 @@ const AuthPage: React.FC = () => {
           showErrorPopup(data.error || "Invalid username or password.");
         }
       } else {
-        // signup
         if (
           !formData.name ||
           !formData.username ||
@@ -268,7 +267,6 @@ const AuthPage: React.FC = () => {
               <option value="provider">Service Provider</option>
             </select>
 
-            {/* Provider Service Type with Suggestions */}
             {formData.role === "provider" && (
               <div className="mb-4 relative">
                 <input
@@ -291,7 +289,7 @@ const AuthPage: React.FC = () => {
                               ...formData,
                               serviceType: service.name,
                             });
-                            setFilteredServices([]); // ✅ Hide suggestions after click
+                            setFilteredServices([]);
                           }}
                           className="px-4 py-2 cursor-pointer hover:bg-gray-100"
                         >
@@ -305,7 +303,6 @@ const AuthPage: React.FC = () => {
           </>
         )}
 
-        {/* Password */}
         <div className="relative mb-4">
           <input
             type={showPassword ? "text" : "password"}
@@ -324,7 +321,6 @@ const AuthPage: React.FC = () => {
           </span>
         </div>
 
-        {/* Confirm Password */}
         {!isLogin && (
           <div className="relative mb-4">
             <input
@@ -345,7 +341,6 @@ const AuthPage: React.FC = () => {
           </div>
         )}
 
-        {/* Captcha */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Human Verification: {captcha.question}
@@ -361,7 +356,6 @@ const AuthPage: React.FC = () => {
           />
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
