@@ -188,7 +188,7 @@ const Navbar = () => {
               {/* Book button if logged in */}
               {isLoggedIn && (
                 <Link
-                  to="/booking"
+                  to="/book"
                   className={`px-4 py-2 rounded transition ${
                     location.pathname === "/booking"
                       ? "bg-green-600 text-white"

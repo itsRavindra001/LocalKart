@@ -3,6 +3,7 @@ import React from 'react';
 import { useCart } from '../../Contexts/CartContext';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, Trash2 } from 'lucide-react';
+import GroceriesPage from '../Services/groceries';
 
 const CartPage: React.FC = () => {
   const {
@@ -27,7 +28,7 @@ const CartPage: React.FC = () => {
       {cartItems.length === 0 ? (
         <div className="flex flex-col items-center py-20">
           <p className="text-lg text-gray-600 mb-6">Your cart is currently empty.</p>
-          <Link to="/">
+          <Link to="/services/groceries">
             <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 shadow-md transition">
               Browse Products
             </button>

@@ -40,7 +40,18 @@ interface FormData {
   captcha: string;
 }
 
-// authoritative service list & prices (frontend display only; backend enforces prices)
+interface FormErrors {
+  name?: string;
+  phone?: string;
+  email?: string;
+  service?: string;
+  providerId?: string;
+  date?: string;
+  address?: string;
+  captcha?: string;
+  general?: string;
+}
+
 const SERVICES = [
   { name: "Plumbing", price: 250, icon: "🛠️" },
   { name: "Electrician", price: 300, icon: "⚡" },
@@ -67,13 +78,11 @@ const BookingPage: React.FC = () => {
   });
 
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
-    null
-  );
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [captcha, setCaptcha] = useState({ question: "", answer: 0 });
   const [loadingProviders, setLoadingProviders] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState(false);
   const [bookingRef, setBookingRef] = useState<string | null>(null);
 
@@ -83,7 +92,6 @@ const BookingPage: React.FC = () => {
     fetchUserDetails();
   }, []);
 
-  // Prefill name/email/phone if backend returns user info
   const fetchUserDetails = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -109,43 +117,37 @@ const BookingPage: React.FC = () => {
     const b = Math.floor(Math.random() * 8) + 1;
     setCaptcha({ question: `${a} + ${b} = ?`, answer: a + b });
     setFormData((prev) => ({ ...prev, captcha: "" }));
+    setErrors((prev) => ({ ...prev, captcha: undefined }));
   };
 
-  const validateForm = (): string | null => {
-    if (!formData.name.trim()) return "Please enter your name.";
-    if (!/^\d{10,15}$/.test(formData.phone))
-      return "Enter a valid phone number (10–15 digits).";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      return "Enter a valid email address.";
-    if (!formData.service) return "Please choose a service.";
-    if (!formData.providerId) return "Please choose a provider.";
-    if (!formData.date) return "Please select a date.";
-    if (
-      new Date(formData.date).setHours(0, 0, 0, 0) <
-      new Date().setHours(0, 0, 0, 0)
-    )
-      return "Date cannot be in the past.";
-    if (!formData.address.trim()) return "Please enter a service address.";
-    if (Number(formData.captcha) !== captcha.answer)
-      return "Captcha answer is incorrect.";
-    return null;
+  const validateForm = (): FormErrors => {
+    const newErrors: FormErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Please enter your name";
+    if (!/^\d{10,15}$/.test(formData.phone)) newErrors.phone = "Enter a valid phone number (10-15 digits)";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Enter a valid email address";
+    if (!formData.service) newErrors.service = "Please choose a service";
+    if (!formData.providerId) newErrors.providerId = "Please choose a provider";
+    if (!formData.date) newErrors.date = "Please select a date";
+    else if (new Date(formData.date).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0)) {
+      newErrors.date = "Date cannot be in the past";
+    }
+    if (!formData.address.trim()) newErrors.address = "Please enter a service address";
+    if (Number(formData.captcha) !== captcha.answer) newErrors.captcha = "Captcha answer is incorrect";
+    return newErrors;
   };
 
-  // Fetch providers for selected service
   const fetchProviders = async (service: string) => {
     setProviders([]);
     setSelectedProvider(null);
     if (!service) return;
     setLoadingProviders(true);
     try {
-      const res = await fetch(
-        `/api/providers?service=${encodeURIComponent(service)}`
-      );
+      const res = await fetch(`/api/providers?service=${encodeURIComponent(service)}`);
       if (!res.ok) throw new Error("Failed to load providers");
       const data = await res.json();
       setProviders(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError("Unable to load providers — please try again.");
+      setErrors({ general: "Unable to load providers — please try again." });
     } finally {
       setLoadingProviders(false);
     }
@@ -154,18 +156,19 @@ const BookingPage: React.FC = () => {
   const handleServiceSelect = (serviceName: string) => {
     setFormData((prev) => ({ ...prev, service: serviceName, providerId: "" }));
     fetchProviders(serviceName);
-    setError(null);
+    setErrors((prev) => ({ ...prev, service: undefined, general: undefined }));
   };
 
   const handleProviderSelect = (id: string) => {
     setFormData((prev) => ({ ...prev, providerId: id }));
     const p = providers.find((x) => x._id === id) || null;
     setSelectedProvider(p);
-    setError(null);
+    setErrors((prev) => ({ ...prev, providerId: undefined }));
   };
 
   const handleLocationSelect = (address: string) => {
     setFormData((prev) => ({ ...prev, address }));
+    setErrors((prev) => ({ ...prev, address: undefined }));
   };
 
   const getServicePrice = () => {
@@ -173,7 +176,6 @@ const BookingPage: React.FC = () => {
     return svc ? svc.price : 0;
   };
 
-  // create a slug/key that matches backend service keys (lowercase, hyphenated)
   const serviceToKey = (serviceName: string) => {
     return serviceName
       .toLowerCase()
@@ -183,10 +185,9 @@ const BookingPage: React.FC = () => {
       .replace(/\s+/g, "-");
   };
 
-  // Load Razorpay script helper
   const loadRazorpayScript = () => {
     return new Promise<void>((resolve, reject) => {
-      if ((window as any).Razorpay) return resolve();
+      if (window.Razorpay) return resolve();
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => resolve();
@@ -195,21 +196,18 @@ const BookingPage: React.FC = () => {
     });
   };
 
-  // Main payment + booking flow (calls backend endpoints under /api/bookings)
   const handlePaymentAndBooking = async () => {
-    setError(null);
+    setErrors({});
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Please log in to continue.");
 
-      // Use frontend price only for display and double-check; backend is authoritative.
       const servicePrice = getServicePrice();
       if (!servicePrice || servicePrice <= 0) {
         throw new Error("Invalid service price");
       }
 
-      // create order on backend - send normalized service key
       const serviceKey = serviceToKey(formData.service);
 
       const orderResp = await fetch("/api/bookings/create-order", {
@@ -218,7 +216,7 @@ const BookingPage: React.FC = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ service: serviceKey }), // backend looks up price
+        body: JSON.stringify({ service: serviceKey }),
       });
 
       if (!orderResp.ok) {
@@ -227,24 +225,20 @@ const BookingPage: React.FC = () => {
       }
 
       const orderJson = await orderResp.json();
-      // expected: { success: true, orderId, amount, currency, key }
       const { orderId, amount, currency, key } = orderJson;
 
       if (!orderId || !key || !amount) throw new Error("Payment service unavailable");
 
-      // amount is in paise from backend — verify matches frontend expected paise
       const expectedPaise = Math.round(servicePrice * 100);
       if (amount !== expectedPaise) {
-        // don't open checkout if mismatch; safer to surface an error
         throw new Error("Price mismatch with server. Please try again.");
       }
 
-      // load SDK if needed
       await loadRazorpayScript();
 
       const options: any = {
-        key, // key from backend response (process.env.RAZORPAY_KEY_ID)
-        amount, // paise
+        key,
+        amount,
         currency: currency || "INR",
         name: "LocalKart",
         description: `${formData.service} booking`,
@@ -258,12 +252,11 @@ const BookingPage: React.FC = () => {
         modal: {
           ondismiss: () => {
             setIsSubmitting(false);
-            setError("Payment was cancelled");
+            setErrors({ general: "Payment was cancelled" });
           },
         },
         handler: async (razorpayResponse: any) => {
           try {
-            // call backend verify endpoint (backend will validate HMAC and create booking)
             const verifyResp = await fetch("/api/bookings/verify-payment", {
               method: "POST",
               headers: {
@@ -279,7 +272,7 @@ const BookingPage: React.FC = () => {
                 date: new Date(formData.date).toISOString(),
                 address: formData.address,
                 phone: formData.phone,
-                amount: amount / 100, // send rupees for record
+                amount: amount / 100,
               }),
             });
 
@@ -293,12 +286,10 @@ const BookingPage: React.FC = () => {
               throw new Error(verifyJson.error || "Payment not verified");
             }
 
-            // backend created booking and returned it
             const booking = verifyJson.booking;
             setSuccess(true);
             setBookingRef(booking._id || booking.id || null);
 
-            // keep name/email, reset other fields
             setFormData((prev) => ({
               ...prev,
               phone: "",
@@ -313,7 +304,7 @@ const BookingPage: React.FC = () => {
             generateCaptcha();
           } catch (err: any) {
             console.error("Post-payment error:", err);
-            setError(err.message || "Payment completed but verification failed");
+            setErrors({ general: err.message || "Payment completed but verification failed" });
           } finally {
             setIsSubmitting(false);
           }
@@ -324,25 +315,22 @@ const BookingPage: React.FC = () => {
       rzp.open();
     } catch (err: any) {
       console.error("Payment error:", err);
-      setError(err.message || "Payment failed. Please try again.");
+      setErrors({ general: err.message || "Payment failed. Please try again." });
       setIsSubmitting(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
     await handlePaymentAndBooking();
   };
 
-  // small helpers
   const selectedPrice = getServicePrice();
 
   return (
@@ -356,18 +344,18 @@ const BookingPage: React.FC = () => {
             </p>
           </header>
 
-          {error && (
+          {errors.general && (
             <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3 flex items-start gap-3">
               <FiAlertCircle className="text-red-500 mt-0.5" />
-              <div className="text-sm text-red-700">{error}</div>
+              <div className="text-sm text-red-700">{errors.general}</div>
             </div>
           )}
 
           {!success ? (
             <>
-              {/* Service picker as buttons (fast selection) */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Choose a service</h3>
+                {errors.service && <div className="text-xs text-red-500 mb-1">{errors.service}</div>}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {SERVICES.map((svc) => (
                     <button
@@ -387,9 +375,9 @@ const BookingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Provider list (appears after service select) */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Pick a provider</h3>
+                {errors.providerId && <div className="text-xs text-red-500 mb-1">{errors.providerId}</div>}
                 {loadingProviders ? (
                   <div className="py-6 flex items-center justify-center text-gray-500">
                     <FiLoader className="animate-spin mr-2" />Loading providers...
@@ -419,7 +407,6 @@ const BookingPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Booking details form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label className="block">
@@ -429,12 +416,16 @@ const BookingPage: React.FC = () => {
                       <input
                         name="name"
                         value={formData.name}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                        className="w-full pl-10 pr-3 py-2 border rounded-md"
+                        onChange={(e) => {
+                          setFormData((prev) => ({ ...prev, name: e.target.value }));
+                          setErrors((prev) => ({ ...prev, name: undefined }));
+                        }}
+                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                         placeholder="Your full name"
                         required
                       />
                     </div>
+                    {errors.name && <div className="text-xs text-red-500 mt-1">{errors.name}</div>}
                   </label>
 
                   <label className="block">
@@ -444,12 +435,16 @@ const BookingPage: React.FC = () => {
                       <input
                         name="phone"
                         value={formData.phone}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                        className="w-full pl-10 pr-3 py-2 border rounded-md"
+                        onChange={(e) => {
+                          setFormData((prev) => ({ ...prev, phone: e.target.value }));
+                          setErrors((prev) => ({ ...prev, phone: undefined }));
+                        }}
+                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
                         placeholder="10–15 digits"
                         required
                       />
                     </div>
+                    {errors.phone && <div className="text-xs text-red-500 mt-1">{errors.phone}</div>}
                   </label>
                 </div>
 
@@ -461,12 +456,16 @@ const BookingPage: React.FC = () => {
                       name="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                      className="w-full pl-10 pr-3 py-2 border rounded-md"
+                      onChange={(e) => {
+                        setFormData((prev) => ({ ...prev, email: e.target.value }));
+                        setErrors((prev) => ({ ...prev, email: undefined }));
+                      }}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="you@example.com"
                       required
                     />
                   </div>
+                  {errors.email && <div className="text-xs text-red-500 mt-1">{errors.email}</div>}
                 </label>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -479,11 +478,15 @@ const BookingPage: React.FC = () => {
                         type="date"
                         min={new Date().toISOString().split("T")[0]}
                         value={formData.date}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
-                        className="w-full pl-10 pr-3 py-2 border rounded-md"
+                        onChange={(e) => {
+                          setFormData((prev) => ({ ...prev, date: e.target.value }));
+                          setErrors((prev) => ({ ...prev, date: undefined }));
+                        }}
+                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.date ? 'border-red-500' : 'border-gray-300'}`}
                         required
                       />
                     </div>
+                    {errors.date && <div className="text-xs text-red-500 mt-1">{errors.date}</div>}
                   </label>
 
                   <label className="block">
@@ -494,8 +497,11 @@ const BookingPage: React.FC = () => {
                         name="captcha"
                         type="number"
                         value={formData.captcha}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, captcha: e.target.value }))}
-                        className="w-full pl-10 pr-3 py-2 border rounded-md"
+                        onChange={(e) => {
+                          setFormData((prev) => ({ ...prev, captcha: e.target.value }));
+                          setErrors((prev) => ({ ...prev, captcha: undefined }));
+                        }}
+                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.captcha ? 'border-red-500' : 'border-gray-300'}`}
                         placeholder={captcha.question}
                         required
                       />
@@ -504,6 +510,7 @@ const BookingPage: React.FC = () => {
                       <span>{captcha.question}</span>
                       <button type="button" onClick={generateCaptcha} className="text-blue-600 text-xs">Regenerate</button>
                     </div>
+                    {errors.captcha && <div className="text-xs text-red-500 mt-1">{errors.captcha}</div>}
                   </label>
                 </div>
 
@@ -515,12 +522,16 @@ const BookingPage: React.FC = () => {
                       name="address"
                       rows={3}
                       value={formData.address}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
-                      className="w-full pl-10 pr-3 py-2 border rounded-md resize-none"
+                      onChange={(e) => {
+                        setFormData((prev) => ({ ...prev, address: e.target.value }));
+                        setErrors((prev) => ({ ...prev, address: undefined }));
+                      }}
+                      className={`w-full pl-10 pr-3 py-2 border rounded-md resize-none ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="Full address with landmark"
                       required
                     />
                   </div>
+                  {errors.address && <div className="text-xs text-red-500 mt-1">{errors.address}</div>}
                   <div className="text-xs text-gray-500 mt-1">Or pick on the map below</div>
                 </label>
 
@@ -528,7 +539,7 @@ const BookingPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-md"
+                    className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-md disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       <>
@@ -541,9 +552,15 @@ const BookingPage: React.FC = () => {
                   </button>
                 </div>
               </form>
+
+              <div className="mt-6">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Pick location (optional)</h4>
+                <div className="h-56 rounded-md overflow-hidden border">
+                  <MapPicker onLocationSelect={handleLocationSelect} initialAddress={formData.address} disabled={isSubmitting} />
+                </div>
+              </div>
             </>
           ) : (
-            // success UI
             <div className="text-center py-8">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
                 <FiCheckCircle className="h-6 w-6 text-green-600" />
@@ -554,25 +571,16 @@ const BookingPage: React.FC = () => {
               <button
                 onClick={() => {
                   setSuccess(false);
-                  setError(null);
+                  setErrors({});
                 }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
               >
                 Book another service
               </button>
             </div>
           )}
-
-          {/* Map picker (always present) */}
-          <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Pick location (optional)</h4>
-            <div className="h-56 rounded-md overflow-hidden border">
-              <MapPicker onLocationSelect={handleLocationSelect} initialAddress={formData.address} disabled={isSubmitting} />
-            </div>
-          </div>
         </div>
 
-        {/* Summary panel */}
         <aside className="bg-white rounded-xl shadow p-6">
           <h4 className="text-sm font-medium text-gray-700 mb-4">Booking summary</h4>
 

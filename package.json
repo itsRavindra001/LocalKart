@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.539.0",
+    "react-leaflet": "^5.0.0",
+    "react-responsive-carousel": "^3.2.23"
+  }
+}
