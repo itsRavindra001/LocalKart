@@ -25,6 +25,7 @@ import TropicanaOrangeJuice from '../../assets/Groceries/Tropicana Orange Juice 
 import EverestGaramMasala from '../../assets/Groceries/Everest Garam Masala 100g.jpg';
 import Cola from '../../assets/Groceries/Coca-Cola 2L.jpg';
 import Mango from '../../assets/fruits/Mango Alphonso 1kg.jpg';
+<<<<<<< HEAD
 import Apple from '../../assets/Fruits/Fresh Apple 1kg.jpg';
 import Banana from '../../assets/Fruits/Banana (12 pcs).jpg';
 import Orange from '../../assets/Fruits/Orange 1kg.jpg';
@@ -34,6 +35,17 @@ import GrapesGreen from '../../assets/Fruits/Grapes Green 500g.jpg';
 import GrapesBlack from '../../assets/Fruits/Grapes Black 500g.jpg';
 import Watermelon from '../../assets/Fruits/Watermelon (Large).jpg';
 import Strawberry from '../../assets/Fruits/Strawberry 200g.jpg';
+=======
+import Apple from '../../assets/fruits/Fresh Apple 1kg.jpg';
+import Banana from '../../assets/fruits/Banana (12 pcs).jpg';
+import Orange from '../../assets/fruits/Orange 1kg.jpg';
+import Pomegranate from '../../assets/fruits/Pomegranate 1kg.jpg';
+import Papaya from '../../assets/fruits/Papaya (Medium).jpg';
+import GrapesGreen from '../../assets/fruits/Grapes Green 500g.jpg';
+import GrapesBlack from '../../assets/fruits/Grapes Black 500g.jpg';
+import Watermelon from '../../assets/fruits/Watermelon (Large).jpg';
+import Strawberry from '../../assets/fruits/Strawberry 200g.jpg';
+>>>>>>> 1e7e6eca4cd34f1243523c44c13c00277145db3e
 import Tomato from '../../assets/Vegetables/Tomato 1kg.jpg';
 import Potato from '../../assets/Vegetables/Potato 1kg.jpg';
 
