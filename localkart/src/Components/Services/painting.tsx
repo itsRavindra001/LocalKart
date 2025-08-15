@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import { Brush, Home, Palette, Droplets, Clock, CheckCircle } from 'lucide-react';
 import ServicePageLayout from '../ServicePageLayout';
 

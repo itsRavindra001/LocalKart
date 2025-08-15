@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import ServicePageLayout from '../ServicePageLayout';
 
 const salonImages = [
@@ -20,7 +20,7 @@ const Salon = () => (
       'Makeup & Special Occasion',
       'Hair Coloring & Treatments',
     ]}
-    serviceName="Salon at Home"
+    // serviceName="Salon at Home"
   />
 );
 

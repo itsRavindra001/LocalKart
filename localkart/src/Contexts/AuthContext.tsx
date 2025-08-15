@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-
+// src/context/AuthContext.tsx
+import { createContext, useContext, useState, useEffect } from "react";
+import type { ReactNode } from "react";
 
 type UserInfo = {
+  _id: string; // ✅ Added to match backend data
   username: string;
   email: string;
   role: string;
@@ -24,31 +25,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = (user: UserInfo) => {
     setIsLoggedIn(true);
     setUserInfo(user);
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userInfo', JSON.stringify(user));
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("userInfo", JSON.stringify(user));
   };
 
   const logout = () => {
     setIsLoggedIn(false);
     setUserInfo(null);
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('token');
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userInfo");
+    localStorage.removeItem("token");
   };
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const storedUser = localStorage.getItem('userInfo');
+    try {
+      const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+      const storedUser = localStorage.getItem("userInfo");
 
-    if (loggedIn && storedUser && storedUser !== 'undefined') {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUserInfo(parsedUser);
-        setIsLoggedIn(true);
-      } catch (error) {
-        console.error('Error parsing stored userInfo:', error);
-        localStorage.removeItem('userInfo'); // clear bad data
+      if (loggedIn && storedUser && storedUser !== "undefined") {
+        const parsedUser: UserInfo = JSON.parse(storedUser);
+        if (parsedUser && parsedUser._id) {
+          setUserInfo(parsedUser);
+          setIsLoggedIn(true);
+        }
       }
+    } catch (error) {
+      console.error("Error reading user from localStorage:", error);
+      localStorage.removeItem("userInfo"); // clear corrupted data
     }
   }, []);
 
@@ -62,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
