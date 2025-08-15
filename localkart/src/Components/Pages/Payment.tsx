@@ -7,16 +7,8 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-<<<<<<< HEAD
-// Fix Leaflet marker icons (type-safe way)
-=======
-<<<<<<< HEAD
-// Fix Leaflet marker icons (type-safe way)
-=======
 // Fix for default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
->>>>>>> 46a98534f156a74540f67e0f09236e98a48cd457
->>>>>>> 1e7e6eca4cd34f1243523c44c13c00277145db3e
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
