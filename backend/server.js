@@ -22,7 +22,7 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'https://local-kart-yv2f.vercel.app' // ✅ your frontend on Vercel
+    'https://local-kart-wnw7.vercel.app' // ✅ your frontend on Vercel
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
