@@ -4,36 +4,45 @@ import { useNavigate, useLocation } from 'react-router-dom';
 type Props = {
   title: string;
   description: string;
-  images: string[];
-  features: string[];
-  serviceType?: string; // Added serviceType prop
+  images?: string[]; // optional
+  serviceType?: string;
+  additionalContent?: React.ReactNode;
+  
+  features: string[] | { icon: React.ReactNode; text: string }[];
 };
 
-const ServicePageLayout = ({ title, description, images, features, serviceType }: Props) => {
+const ServicePageLayout: React.FC<Props> = ({
+  title,
+  description,
+  images = [],
+  serviceType,
+  additionalContent,
+  features
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleBookNow = () => {
-    // Navigate to booking page with service details in state
     navigate('/book', {
       state: {
         serviceName: title,
         serviceDescription: description,
-        serviceType: serviceType || title.toLowerCase(), // Fallback to title if serviceType not provided
+        serviceType: serviceType || title.toLowerCase(),
         serviceImages: images,
       }
     });
   };
 
-  // Extract service details if coming from a service selection
   const selectedService = location.state?.selectedService;
 
   return (
     <div className="min-h-screen bg-gray-50 py-14 px-4 sm:px-8 font-sans relative z-0">
-      {/* Service Selection Banner - Only shows if coming from service selection */}
+      {/* Selected Service Banner */}
       {selectedService && (
         <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-8 max-w-7xl mx-auto rounded">
-          <p className="font-medium">You've selected: <span className="font-bold">{selectedService}</span></p>
+          <p className="font-medium">
+            You've selected: <span className="font-bold">{selectedService}</span>
+          </p>
         </div>
       )}
 
@@ -44,25 +53,41 @@ const ServicePageLayout = ({ title, description, images, features, serviceType }
       </div>
 
       {/* Gallery */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 max-w-7xl mx-auto">
-        {images.map((src, i) => (
-          <div key={i} className="rounded-xl overflow-hidden shadow hover:shadow-xl transition-shadow">
-            <img
-              src={src}
-              alt={`Image of ${title} - ${i + 1}`}
-              className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
-            />
-          </div>
-        ))}
-      </div>
+      {images.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 max-w-7xl mx-auto">
+          {images.map((src, i) => (
+            <div key={i} className="rounded-xl overflow-hidden shadow hover:shadow-xl transition-shadow">
+              <img
+                src={src}
+                alt={`Image of ${title} - ${i + 1}`}
+                className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      
+
+      {/* Additional Content Section */}
+      {additionalContent && <div className="mt-12">{additionalContent}</div>}
 
       {/* Features Section */}
       <div className="w-full bg-white py-10 px-6 sm:px-10 md:px-16 lg:px-32 shadow-inner">
-        <h2 className="text-3xl font-bold text-center text-blue-700 mb-6">Why Choose This Service?</h2>
+        <h2 className="text-3xl font-bold text-center text-blue-700 mb-6">
+          Why Choose This Service?
+        </h2>
         <ul className="list-disc list-inside text-gray-800 text-lg space-y-4 max-w-5xl mx-auto">
-          {features.map((item, index) => (
-            <li key={index} className="leading-relaxed">{item}</li>
-          ))}
+          {features.map((item, index) =>
+            typeof item === 'string' ? (
+              <li key={index} className="leading-relaxed">{item}</li>
+            ) : (
+              <li key={index} className="flex items-center space-x-2 leading-relaxed">
+                {item.icon && <span>{item.icon}</span>}
+                <span>{item.text}</span>
+              </li>
+            )
+          )}
         </ul>
       </div>
 
