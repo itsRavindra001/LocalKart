@@ -8,7 +8,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const providerRoutes = require('./routes/providerRoutes');
-const paymentRoutes = require('./routes/paymentRoutes'); // ✅ CommonJS import
+const paymentRoutes = require('./routes/paymentRoutes');
 const User = require('./models/User');
 const bcrypt = require('bcrypt');
 
@@ -16,12 +16,24 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ===============================
+// CORS Setup (for local + Vercel)
+// ===============================
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://local-kart-yv2f.vercel.app' // ✅ your frontend on Vercel
+  ],
+  credentials: true,
+};
+
+// Apply CORS globally
+app.use(cors(corsOptions));
+// app.options('*', cors(corsOptions)); // Handle preflight
+
+// ===============================
 // Middleware
 // ===============================
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // allow local dev variations
-  credentials: true,
-}));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -31,20 +43,19 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/providers', providerRoutes);
-app.use('/api/payment', paymentRoutes); // ✅ Payment API routes
+app.use('/api/payment', paymentRoutes);
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
-// 404 handler for unknown API routes
+// 404 for unknown API routes
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'API route not found' });
 });
 
 // ===============================
-// Create default admin (if none exists)
+// Create default admin
 // ===============================
 const createDefaultAdmin = async () => {
   try {
@@ -81,5 +92,5 @@ mongoose.connect(process.env.MONGO_URI)
   })
   .catch((err) => {
     console.error('❌ MongoDB Connection Error:', err.message);
-    process.exit(1); // exit if DB connection fails
+    process.exit(1);
   });
