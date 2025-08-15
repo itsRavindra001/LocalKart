@@ -24,7 +24,7 @@ import RealMixedFruitJuice from '../../assets/Groceries/Real Mixed Fruit Juice 1
 import TropicanaOrangeJuice from '../../assets/Groceries/Tropicana Orange Juice 1L.jpg';
 import EverestGaramMasala from '../../assets/Groceries/Everest Garam Masala 100g.jpg';
 import Cola from '../../assets/Groceries/Coca-Cola 2L.jpg';
-import Mango from '../../assets/Fruits/Mango Alphonso 1kg.jpg';
+import Mango from '../../assets/fruits/Mango Alphonso 1kg.jpg';
 import Apple from '../../assets/Fruits/Fresh Apple 1kg.jpg';
 import Banana from '../../assets/Fruits/Banana (12 pcs).jpg';
 import Orange from '../../assets/Fruits/Orange 1kg.jpg';
