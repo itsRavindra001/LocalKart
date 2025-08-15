@@ -35,8 +35,8 @@ import GrapesGreen from '../../assets/fruits/Grapes Green 500g.jpg';
 import GrapesBlack from '../../assets/fruits/Grapes Black 500g.jpg';
 import Watermelon from '../../assets/fruits/Watermelon (Large).jpg';
 import Strawberry from '../../assets/fruits/Strawberry 200g.jpg';
-import Tomato from '../../assets/Vegetables/Tomato 1kg.jpg';
-import Potato from '../../assets/Vegetables/Potato 1kg.jpg';
+import Tomato from '../../assets/vegetables/Tomato 1kg.jpg';
+import Potato from '../../assets/vegetables/Potato 1kg.jpg';
 
 type GroceryItem = {
   id: number;
