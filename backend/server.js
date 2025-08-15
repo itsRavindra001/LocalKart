@@ -16,7 +16,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ===============================
-// CORS Setup (for local + Vercel)
+// CORS Setup (local + Vercel)
 // ===============================
 const corsOptions = {
   origin: [
@@ -25,17 +25,25 @@ const corsOptions = {
     'https://local-kart-yv2f.vercel.app' // ✅ your frontend on Vercel
   ],
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-// Apply CORS globally
 app.use(cors(corsOptions));
-// app.options('*', cors(corsOptions)); // Handle preflight
+// app.options('*', cors(corsOptions)); // ✅ Handles preflight requests without crashing
 
 // ===============================
 // Middleware
 // ===============================
 app.use(express.json());
 app.use(cookieParser());
+
+// ===============================
+// Root Route (Fixes "Cannot GET /")
+// ===============================
+app.get('/', (req, res) => {
+  res.send('🚀 LocalKart backend is running');
+});
 
 // ===============================
 // Routes
