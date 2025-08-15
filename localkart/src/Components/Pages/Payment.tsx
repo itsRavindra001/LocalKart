@@ -1,4 +1,4 @@
-// src/pages/payment.tsx
+// src/Components/Pages/Payment.tsx
 import { useState } from 'react';
 import { useCart } from '../../Contexts/CartContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -7,8 +7,8 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix for default marker icons
-delete L.Icon.Default.prototype._getIconUrl;
+// Fix for default marker icons (TypeScript safe)
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -61,7 +61,6 @@ const PaymentPage = () => {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Extract cleaning plan if exists
   const cleaningPlan: CleaningPlan | null = locationState?.planTitle
     ? {
         title: locationState.planTitle,
@@ -72,7 +71,6 @@ const PaymentPage = () => {
       }
     : null;
 
-  // Calculate totals
   const groceryTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const cleaningTotal = cleaningPlan?.price || 0;
   const total = groceryTotal + cleaningTotal;
@@ -103,11 +101,9 @@ const PaymentPage = () => {
         description: 'Order Payment',
         order_id: data.id,
         handler: async (response: any) => {
-          const verify = await axios.post(
-            '/api/payment/verify',
-            response,
-            { headers: { 'Content-Type': 'application/json' } }
-          );
+          const verify = await axios.post('/api/payment/verify', response, {
+            headers: { 'Content-Type': 'application/json' },
+          });
 
           if (verify.data.success) {
             alert(`✅ Payment Successful!\nLocation: ${location?.lat}, ${location?.lng}`);
