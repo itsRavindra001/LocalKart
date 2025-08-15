@@ -76,7 +76,7 @@ const Navbar: React.FC = () => {
   const minimalNavbar = isAdmin || isProvider;
 
   return (
-    <nav className="bg-white shadow sticky top-0 z-50">
+    <nav className="ixed top-0 left-0 right-0 z-50 bg-white shadow-md h-16">
       <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition">
