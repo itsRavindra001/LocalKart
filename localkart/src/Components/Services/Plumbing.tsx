@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import ServicePageLayout from '../ServicePageLayout';
 
 const plumbingImages = [
@@ -20,7 +20,7 @@ const Plumbing = () => (
       'Water Heater Service',
       'Pipe Replacement & Re-piping',
     ]}
-    serviceName="Plumbing"
+    // serviceName="Plumbing"
   />
 );
 

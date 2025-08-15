@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import { BookOpen, GraduationCap, Clock, Monitor, Award, CheckCircle } from 'lucide-react';
 import ServicePageLayout from '../ServicePageLayout';
 

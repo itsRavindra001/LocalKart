@@ -1,15 +1,17 @@
+// src/Components/Pages/Navbar.tsx
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../Contexts/AuthContext";
 
-const Navbar = () => {
+const Navbar: React.FC = () => {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const servicesRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const servicesRef = useRef<HTMLDivElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -30,13 +32,18 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (servicesRef.current && !servicesRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (servicesRef.current && !servicesRef.current.contains(target)) {
         setServicesOpen(false);
       }
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setDropdownOpen(false);
       }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(target)) {
+        setMobileMenuOpen(false);
+      }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -60,6 +67,7 @@ const Navbar = () => {
     logout();
     navigate("/login");
     setDropdownOpen(false);
+    setMobileMenuOpen(false);
   };
 
   // Roles
@@ -71,10 +79,7 @@ const Navbar = () => {
     <nav className="ixed top-0 left-0 right-0 z-50 bg-white shadow-md h-16">
       <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
         {/* Logo */}
-        <Link
-          to="/"
-          className="flex items-center gap-2 hover:opacity-90 transition"
-        >
+        <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition">
           <img
             src="https://img.freepik.com/free-vector/hand-drawn-shop-local-logo-design_23-2149575769.jpg?semt=ais_hybrid&w=740"
             alt="LocalKart Logo"
@@ -87,24 +92,19 @@ const Navbar = () => {
         {minimalNavbar ? (
           <div className="flex items-center gap-4" ref={dropdownRef}>
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
+              onClick={() => setDropdownOpen((p) => !p)}
               className="text-white font-semibold flex items-center justify-center bg-blue-500 hover:bg-blue-600 rounded-full w-10 h-10"
+              aria-label="Open account menu"
             >
-              👤
+              <span role="img" aria-label="user">👤</span>
             </button>
+
             {dropdownOpen && (
               <div className="absolute right-4 top-16 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
                 <div className="p-4 text-sm text-gray-800 space-y-1">
-                  <p>
-                    <strong>Username:</strong>{" "}
-                    {userInfo?.username || "N/A"}
-                  </p>
-                  <p>
-                    <strong>Email:</strong> {userInfo?.email || "N/A"}
-                  </p>
-                  <p>
-                    <strong>Role:</strong> {userInfo?.role || "User"}
-                  </p>
+                  <p><strong>Username:</strong> {userInfo?.username || "N/A"}</p>
+                  <p><strong>Email:</strong> {userInfo?.email || "N/A"}</p>
+                  <p><strong>Role:</strong> {userInfo?.role || "User"}</p>
                 </div>
                 <div className="border-t p-2">
                   <button
@@ -118,23 +118,21 @@ const Navbar = () => {
             )}
           </div>
         ) : (
-          /* Full Navbar for normal users/guests */
           <>
+            {/* Mobile menu button */}
             <button
               className="md:hidden text-2xl"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-label="Toggle menu"
             >
               ☰
             </button>
 
+            {/* Desktop nav */}
             <div className="hidden md:flex gap-6 text-gray-800 font-medium items-center">
               <Link
                 to="/"
-                className={`${
-                  location.pathname === "/"
-                    ? "text-blue-600 font-semibold"
-                    : ""
-                } hover:text-blue-600`}
+                className={`${location.pathname === "/" ? "text-blue-600 font-semibold" : ""} hover:text-blue-600`}
               >
                 Home
               </Link>
@@ -143,14 +141,11 @@ const Navbar = () => {
               <div className="relative" ref={servicesRef}>
                 <button
                   onClick={() => setServicesOpen((prev) => !prev)}
-                  className={`flex items-center gap-1 hover:text-blue-600 transition ${
-                    location.pathname.startsWith("/services")
-                      ? "text-blue-600 font-semibold"
-                      : ""
-                  }`}
+                  className={`flex items-center gap-1 hover:text-blue-600 transition ${location.pathname.startsWith("/services") ? "text-blue-600 font-semibold" : ""}`}
                 >
                   Services ▾
                 </button>
+
                 {servicesOpen && (
                   <ul className="absolute left-0 top-full mt-2 bg-white text-gray-800 border border-gray-200 shadow-lg rounded w-56 z-50 max-h-96 overflow-y-auto">
                     {services.map((service) => (
@@ -177,10 +172,7 @@ const Navbar = () => {
                   placeholder="Search services..."
                   className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600"
-                >
+                <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600" aria-label="Search">
                   🔍
                 </button>
               </form>
@@ -189,11 +181,7 @@ const Navbar = () => {
               {isLoggedIn && (
                 <Link
                   to="/book"
-                  className={`px-4 py-2 rounded transition ${
-                    location.pathname === "/booking"
-                      ? "bg-green-600 text-white"
-                      : "bg-green-500 text-white hover:bg-green-600"
-                  }`}
+                  className={`px-4 py-2 rounded transition ${location.pathname === "/book" ? "bg-green-600 text-white" : "bg-green-500 text-white hover:bg-green-600"}`}
                 >
                   Book
                 </Link>
@@ -201,11 +189,7 @@ const Navbar = () => {
 
               <Link
                 to="/provider"
-                className={`${
-                  location.pathname === "/provider"
-                    ? "text-blue-600 font-semibold"
-                    : ""
-                } hover:text-blue-600`}
+                className={`${location.pathname === "/provider" ? "text-blue-600 font-semibold" : ""} hover:text-blue-600`}
               >
                 Become a Provider
               </Link>
@@ -215,21 +199,13 @@ const Navbar = () => {
                 <>
                   <Link
                     to="/login"
-                    className={`px-4 py-2 rounded transition ${
-                      location.pathname === "/login"
-                        ? "bg-blue-600 text-white"
-                        : "bg-blue-500 text-white hover:bg-blue-600"
-                    }`}
+                    className={`px-4 py-2 rounded transition ${location.pathname === "/login" ? "bg-blue-600 text-white" : "bg-blue-500 text-white hover:bg-blue-600"}`}
                   >
                     Login
                   </Link>
                   <Link
                     to="/signup"
-                    className={`px-4 py-2 rounded border ${
-                      location.pathname === "/signup"
-                        ? "bg-blue-50 text-blue-600 border-blue-500"
-                        : "bg-white text-blue-600 border-blue-500 hover:bg-blue-50"
-                    }`}
+                    className={`px-4 py-2 rounded border ${location.pathname === "/signup" ? "bg-blue-50 text-blue-600 border-blue-500" : "bg-white text-blue-600 border-blue-500 hover:bg-blue-50"}`}
                   >
                     Signup
                   </Link>
@@ -237,24 +213,19 @@ const Navbar = () => {
               ) : (
                 <div className="relative" ref={dropdownRef}>
                   <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    onClick={() => setDropdownOpen((p) => !p)}
                     className="text-white font-semibold flex items-center justify-center bg-blue-500 hover:bg-blue-600 rounded-full w-10 h-10"
+                    aria-label="Open account menu"
                   >
-                    👤
+                    <span role="img" aria-label="user">👤</span>
                   </button>
+
                   {dropdownOpen && (
                     <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
                       <div className="p-4 text-sm text-gray-800 space-y-1">
-                        <p>
-                          <strong>Username:</strong>{" "}
-                          {userInfo?.username || "N/A"}
-                        </p>
-                        <p>
-                          <strong>Email:</strong> {userInfo?.email || "N/A"}
-                        </p>
-                        <p>
-                          <strong>Role:</strong> {userInfo?.role || "User"}
-                        </p>
+                        <p><strong>Username:</strong> {userInfo?.username || "N/A"}</p>
+                        <p><strong>Email:</strong> {userInfo?.email || "N/A"}</p>
+                        <p><strong>Role:</strong> {userInfo?.role || "User"}</p>
                       </div>
                       <div className="border-t p-2">
                         <button
@@ -272,6 +243,60 @@ const Navbar = () => {
           </>
         )}
       </div>
+
+      {/* Mobile menu (simple) */}
+      {mobileMenuOpen && (
+        <div ref={mobileMenuRef} className="md:hidden bg-white shadow-lg border-t border-gray-200">
+          <div className="p-4 space-y-3">
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search services..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none"
+              />
+              <button type="submit" className="px-3 py-2 bg-blue-500 text-white rounded-md">Search</button>
+            </form>
+
+            <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block px-2 py-2">Home</Link>
+
+            <div className="border-t pt-2">
+              <p className="text-sm font-medium px-2 pb-2">Services</p>
+              <div className="grid grid-cols-2 gap-2 px-2">
+                {services.map((s) => (
+                  <Link
+                    key={s.path}
+                    to={`/services/${s.path}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 bg-gray-50 rounded"
+                  >
+                    {s.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t pt-2 flex flex-col gap-2">
+              <Link to="/provider" onClick={() => setMobileMenuOpen(false)} className="px-2 py-2">Become a Provider</Link>
+              {!isLoggedIn ? (
+                <>
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="px-2 py-2">Login</Link>
+                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)} className="px-2 py-2">Signup</Link>
+                </>
+              ) : (
+                <>
+                  <div className="px-2 py-2 text-sm">
+                    <div><strong>{userInfo?.username}</strong></div>
+                    <div className="text-xs text-gray-500">{userInfo?.email}</div>
+                  </div>
+                  <button onClick={handleLogout} className="w-full text-left px-2 py-2 text-red-600">Logout</button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

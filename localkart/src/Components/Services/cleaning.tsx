@@ -1,5 +1,5 @@
 // src/pages/HouseCleaning.tsx
-import React from 'react';
+// import React from 'react';
 import { Sparkles, Home, Bath, ShowerHead, Leaf, CalendarCheck } from 'lucide-react';
 import ServicePageLayout from '../ServicePageLayout';
 import { useNavigate } from 'react-router-dom';

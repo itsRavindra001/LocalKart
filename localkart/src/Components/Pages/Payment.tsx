@@ -1,5 +1,5 @@
 // src/pages/payment.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useCart } from '../../Contexts/CartContext';
 import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -8,8 +8,12 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { FaMapMarkerAlt, FaSearchLocation } from 'react-icons/fa';
 
+<<<<<<< HEAD
 // Fix for default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
+=======
+// Fix Leaflet marker icons (type-safe way)
+>>>>>>> 7d51411 (build complete)
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',

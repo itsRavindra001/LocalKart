@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import { Scissors, Ruler, Shirt, Truck, CalendarCheck, CheckCircle } from 'lucide-react';
 import ServicePageLayout from '../ServicePageLayout';
 
