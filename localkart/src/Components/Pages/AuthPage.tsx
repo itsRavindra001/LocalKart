@@ -119,7 +119,7 @@ const AuthPage: React.FC = () => {
           return;
         }
 
-        const res = await fetch("http://localhost:5000/api/auth/login", {
+        const res = await fetch("https://local-kart-1ybi.vercel.app//api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -163,7 +163,7 @@ const AuthPage: React.FC = () => {
           return;
         }
 
-        const res = await fetch("http://localhost:5000/api/auth/signup", {
+        const res = await fetch("https://local-kart-1ybi.vercel.app//api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
