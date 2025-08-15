@@ -1,19 +1,13 @@
 // src/pages/payment.tsx
 import { useState } from 'react';
 import { useCart } from '../../Contexts/CartContext';
-import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { FaMapMarkerAlt, FaSearchLocation } from 'react-icons/fa';
 
-<<<<<<< HEAD
-// Fix for default marker icons
-delete L.Icon.Default.prototype._getIconUrl;
-=======
 // Fix Leaflet marker icons (type-safe way)
->>>>>>> 7d51411 (build complete)
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -28,132 +22,43 @@ interface CleaningPlan {
   price: number;
 }
 
-interface LocationSearchProps {
-  onSearch: (query: string) => void;
-}
-
-const LocationSearch = ({ onSearch }: LocationSearchProps) => {
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(searchQuery);
-  };
-
-  return (
-    <form onSubmit={handleSearch} className="absolute top-4 left-4 z-[1000] w-72 shadow-lg">
-      <div className="relative">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search for a location..."
-          className="w-full p-3 pr-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
-        />
-        <button
-          type="submit"
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-600 hover:text-green-800"
-        >
-          <FaSearchLocation size={20} />
-        </button>
-      </div>
-    </form>
-  );
-};
-
 const LeafletMapPicker = ({
   onLocationSelect,
 }: {
-  onLocationSelect: (lat: number, lng: number, address?: string) => void;
+  onLocationSelect: (lat: number, lng: number) => void;
 }) => {
   const [markerPos, setMarkerPos] = useState<{ lat: number; lng: number } | null>(null);
-  const [address, setAddress] = useState<string>('');
-
-  const getAddress = async (lat: number, lng: number) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-      );
-      const data = await response.json();
-      return data.display_name || 'Selected location';
-    } catch (error) {
-      console.error('Geocoding error:', error);
-      return 'Selected location';
-    }
-  };
-
-  const handleSearch = async (query: string) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
-      );
-      const data = await response.json();
-      if (data.length > 0) {
-        const { lat, lon } = data[0];
-        const newPos = { lat: parseFloat(lat), lng: parseFloat(lon) };
-        setMarkerPos(newPos);
-        const addr = await getAddress(newPos.lat, newPos.lng);
-        setAddress(addr);
-        onLocationSelect(newPos.lat, newPos.lng, addr);
-      }
-    } catch (error) {
-      console.error('Search error:', error);
-    }
-  };
 
   const MapClick = () => {
-    const map = useMapEvents({
-      async click(e) {
-        const newPos = e.latlng;
-        setMarkerPos(newPos);
-        const addr = await getAddress(newPos.lat, newPos.lng);
-        setAddress(addr);
-        onLocationSelect(newPos.lat, newPos.lng, addr);
+    useMapEvents({
+      click(e) {
+        setMarkerPos(e.latlng);
+        onLocationSelect(e.latlng.lat, e.latlng.lng);
       },
     });
-
     return null;
   };
 
   return (
-    <div className="relative h-96 w-full rounded-xl overflow-hidden border border-gray-200 shadow-md mt-4">
-      <MapContainer
-        center={[28.6139, 77.209]}
-        zoom={13}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={false}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        {markerPos && (
-          <Marker position={markerPos}>
-            <Popup>
-              <div className="font-medium">
-                <FaMapMarkerAlt className="inline mr-1 text-green-600" />
-                {address}
-              </div>
-            </Popup>
-          </Marker>
-        )}
-        <MapClick />
-      </MapContainer>
-      <LocationSearch onSearch={handleSearch} />
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white p-2 rounded-lg shadow-md text-sm">
-        <p>Click on the map or search to select location</p>
-      </div>
-    </div>
+    <MapContainer
+      center={[28.6139, 77.209]}
+      zoom={13}
+      style={{ height: '300px', width: '100%' }}
+    >
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      {markerPos && <Marker position={markerPos} />}
+      <MapClick />
+    </MapContainer>
   );
 };
 
 const PaymentPage = () => {
   const { cartItems, clearCart } = useCart();
   const navigate = useNavigate();
-  const locationState = useRouterLocation().state;
+  const locationState = useLocation().state;
 
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
-  const [location, setLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   // Extract cleaning plan if exists
   const cleaningPlan: CleaningPlan | null = locationState?.planTitle
@@ -171,12 +76,12 @@ const PaymentPage = () => {
   const cleaningTotal = cleaningPlan?.price || 0;
   const total = groceryTotal + cleaningTotal;
 
-  const handleLocationSelect = (lat: number, lng: number, address?: string) => {
-    setLocation({ lat, lng, address });
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setLocation({ lat, lng });
   };
 
   const handleCODOrder = () => {
-    alert(`✅ Order placed via Cash on Delivery!\nLocation: ${location?.address || `${location?.lat}, ${location?.lng}`}`);
+    alert(`✅ Order placed via Cash on Delivery!\nLocation: ${location?.lat}, ${location?.lng}`);
     clearCart();
     navigate('/services/groceries');
   };
@@ -204,7 +109,7 @@ const PaymentPage = () => {
           );
 
           if (verify.data.success) {
-            alert(`✅ Payment Successful!\nLocation: ${location?.address || `${location?.lat}, ${location?.lng}`}`);
+            alert(`✅ Payment Successful!\nLocation: ${location?.lat}, ${location?.lng}`);
             clearCart();
             navigate('/services/groceries');
           } else {
@@ -241,7 +146,7 @@ const PaymentPage = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 "> {/* Added pt-20 to account for navbar */}
+    <div className="max-w-2xl mx-auto p-6">
       <h2 className="text-3xl font-bold text-center text-green-600 mb-6">Payment</h2>
 
       {/* Order Summary */}
@@ -317,21 +222,17 @@ const PaymentPage = () => {
       {/* Delivery Location */}
       <div className="mt-8">
         <h3 className="text-lg font-semibold mb-4">Select Delivery Location</h3>
-        <LeafletMapPicker onLocationSelect={handleLocationSelect} />
-        {location && (
-          <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="flex items-start">
-              <FaMapMarkerAlt className="text-green-600 mt-1 mr-2" />
-              <div>
-                <p className="font-medium text-green-800">Selected Delivery Location</p>
-                <p className="text-sm text-gray-700">{location.address}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Coordinates: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
-                </p>
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+          <LeafletMapPicker onLocationSelect={handleLocationSelect} />
+          {location && (
+            <div className="mt-4 text-gray-700">
+              <p className="font-medium">📍 Selected Location:</p>
+              <div className="text-xs text-gray-500 mt-1">
+                Latitude: {location.lat.toFixed(6)}, Longitude: {location.lng.toFixed(6)}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Place Order Button */}
