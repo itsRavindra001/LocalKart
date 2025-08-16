@@ -1,4 +1,3 @@
-// src/Components/Pages/Navbar.tsx
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../Contexts/AuthContext";
@@ -18,16 +17,15 @@ const Navbar: React.FC = () => {
   const { isLoggedIn, logout, userInfo } = useAuth();
 
   const services = [
-    { name: "AC Repair", path: "ac-repair" },
-    { name: "Electrician", path: "electrician" },
-    { name: "Plumbing", path: "plumbing" },
-    { name: "Salon at Home", path: "salon" },
-    { name: "House Cleaning", path: "cleaning" },
-    { name: "Painting", path: "painting" },
-    { name: "Carpentry", path: "carpentry" },
-    { name: "Groceries", path: "groceries" },
-    { name: "Tutors", path: "tutors" },
-    { name: "Tailors", path: "tailors" },
+    { name: "AC Repair", path: "ac-repair", icon: "❄️", description: "Professional AC installation and repair services" },
+    { name: "Electrician", path: "electrician", icon: "⚡", description: "Certified electricians for all your needs" },
+    { name: "Salon at Home", path: "salon", icon: "💇", description: "Beauty services in the comfort of your home" },
+    { name: "House Cleaning", path: "cleaning", icon: "🧹", description: "Thorough cleaning for your living space" },
+    { name: "Painting", path: "painting", icon: "🎨", description: "Interior and exterior painting services" },
+    { name: "Carpentry", path: "carpentry", icon: "🪚", description: "Custom woodwork and repairs" },
+    { name: "Groceries", path: "groceries", icon: "🛒", description: "Fresh groceries delivered to your door" },
+    { name: "Tutors", path: "tutors", icon: "📚", description: "Personalized learning with expert tutors" },
+    { name: "Tailors", path: "tailors", icon: "🧵", description: "Custom clothing alterations and repairs" },
   ];
 
   useEffect(() => {
@@ -70,230 +68,348 @@ const Navbar: React.FC = () => {
     setMobileMenuOpen(false);
   };
 
+  const handleServiceClick = () => {
+    setServicesOpen(false);
+    setMobileMenuOpen(false);
+  };
+
   // Roles
   const isAdmin = userInfo?.role === "admin";
   const isProvider = userInfo?.role === "provider";
   const minimalNavbar = isAdmin || isProvider;
 
   return (
-    <nav className="ixed top-0 left-0 right-0 z-50 bg-white shadow-md h-16">
-      <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition">
-          <img
-            src="https://img.freepik.com/free-vector/hand-drawn-shop-local-logo-design_23-2149575769.jpg?semt=ais_hybrid&w=740"
-            alt="LocalKart Logo"
-            className="h-10 w-10 rounded-full object-cover"
-          />
-          <h1 className="text-2xl font-bold text-gray-800">LocalKart</h1>
-        </Link>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link to="/" className="flex-shrink-0 flex items-center">
+            <img
+              className="h-8 w-8 rounded-full"
+              src="https://img.freepik.com/free-vector/hand-drawn-shop-local-logo-design_23-2149575769.jpg"
+              alt="LocalKart Logo"
+            />
+            <span className="ml-2 text-xl font-bold text-gray-900 hidden sm:block">LocalKart</span>
+          </Link>
 
-        {/* Minimal Navbar for Admin & Provider */}
-        {minimalNavbar ? (
-          <div className="flex items-center gap-4" ref={dropdownRef}>
+          {/* Mobile menu button (right side) */}
+          <div className="flex items-center md:hidden">
             <button
-              onClick={() => setDropdownOpen((p) => !p)}
-              className="text-white font-semibold flex items-center justify-center bg-blue-500 hover:bg-blue-600 rounded-full w-10 h-10"
-              aria-label="Open account menu"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none"
+              aria-expanded="false"
             >
-              <span role="img" aria-label="user">👤</span>
+              <span className="sr-only">Open menu</span>
+              {mobileMenuOpen ? (
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
             </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-4 top-16 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                <div className="p-4 text-sm text-gray-800 space-y-1">
-                  <p><strong>Username:</strong> {userInfo?.username || "N/A"}</p>
-                  <p><strong>Email:</strong> {userInfo?.email || "N/A"}</p>
-                  <p><strong>Role:</strong> {userInfo?.role || "User"}</p>
-                </div>
-                <div className="border-t p-2">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded"
-                  >
-                    Logout
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
-        ) : (
-          <>
-            {/* Mobile menu button */}
-            <button
-              className="md:hidden text-2xl"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label="Toggle menu"
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex md:items-center md:space-x-6">
+            <Link
+              to="/"
+              className={`px-3 py-2 rounded-md text-sm font-medium ${location.pathname === "/" ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"}`}
             >
-              ☰
-            </button>
+              Home
+            </Link>
 
-            {/* Desktop nav */}
-            <div className="hidden md:flex gap-6 text-gray-800 font-medium items-center">
-              <Link
-                to="/"
-                className={`${location.pathname === "/" ? "text-blue-600 font-semibold" : ""} hover:text-blue-600`}
+            <Link
+              to="/provider"
+              className={`px-3 py-2 rounded-md text-sm font-medium ${location.pathname === "/provider" ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"}`}
+            >
+              Become a Provider
+            </Link>
+
+            {/* Services Dropdown (right side) */}
+            <div className="relative ml-4" ref={servicesRef}>
+              <button
+                onClick={() => setServicesOpen(!servicesOpen)}
+                className={`px-3 py-2 rounded-md text-sm font-medium flex items-center ${location.pathname.startsWith("/services") ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"}`}
               >
-                Home
-              </Link>
-
-              {/* Services Dropdown */}
-              <div className="relative" ref={servicesRef}>
-                <button
-                  onClick={() => setServicesOpen((prev) => !prev)}
-                  className={`flex items-center gap-1 hover:text-blue-600 transition ${location.pathname.startsWith("/services") ? "text-blue-600 font-semibold" : ""}`}
+                <span>Services</span>
+                <svg
+                  className={`ml-1 h-4 w-4 transition-transform ${servicesOpen ? "transform rotate-180" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  Services ▾
-                </button>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-                {servicesOpen && (
-                  <ul className="absolute left-0 top-full mt-2 bg-white text-gray-800 border border-gray-200 shadow-lg rounded w-56 z-50 max-h-96 overflow-y-auto">
-                    {services.map((service) => (
-                      <li key={service.path}>
-                        <Link
-                          to={`/services/${service.path}`}
-                          className="block px-4 py-2 hover:bg-gray-100 capitalize"
-                          onClick={() => setServicesOpen(false)}
-                        >
-                          {service.name}
-                        </Link>
-                      </li>
+              {servicesOpen && (
+                <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                  <div className="py-2 px-3 grid gap-2">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Professional technicians
+                      </h3>
+                      <button 
+                        onClick={() => setServicesOpen(false)}
+                        className="text-gray-400 hover:text-gray-500"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    {services.slice(0, 5).map((service) => (
+                      <Link
+                        key={service.path}
+                        to={`/services/${service.path}`}
+                        onClick={handleServiceClick}
+                        className="flex items-start p-2 rounded-md hover:bg-gray-50"
+                      >
+                        <span className="text-lg mr-3">{service.icon}</span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                          <p className="text-xs text-gray-500">{service.description}</p>
+                        </div>
+                      </Link>
                     ))}
-                  </ul>
-                )}
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">
+                      Affordable services
+                    </h3>
+                    {services.slice(5).map((service) => (
+                      <Link
+                        key={service.path}
+                        to={`/services/${service.path}`}
+                        onClick={handleServiceClick}
+                        className="flex items-start p-2 rounded-md hover:bg-gray-50"
+                      >
+                        <span className="text-lg mr-3">{service.icon}</span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                          <p className="text-xs text-gray-500">{service.description}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Auth Buttons */}
+            {!isLoggedIn ? (
+              <div className="flex items-center space-x-2 ml-4">
+                <Link
+                  to="/login"
+                  className="px-3 py-1.5 rounded-md text-sm font-medium text-blue-700 border border-blue-700 hover:bg-blue-50"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Sign Up
+                </Link>
               </div>
-
-              {/* Search */}
-              <form onSubmit={handleSearch} className="relative">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search services..."
-                  className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600" aria-label="Search">
-                  🔍
-                </button>
-              </form>
-
-              {/* Book button if logged in */}
-              {isLoggedIn && (
+            ) : (
+              <div className="flex items-center space-x-4 ml-4">
                 <Link
                   to="/book"
-                  className={`px-4 py-2 rounded transition ${location.pathname === "/book" ? "bg-green-600 text-white" : "bg-green-500 text-white hover:bg-green-600"}`}
+                  className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700"
                 >
-                  Book
+                  Book Now
                 </Link>
-              )}
-
-              <Link
-                to="/provider"
-                className={`${location.pathname === "/provider" ? "text-blue-600 font-semibold" : ""} hover:text-blue-600`}
-              >
-                Become a Provider
-              </Link>
-
-              {/* Auth buttons */}
-              {!isLoggedIn ? (
-                <>
-                  <Link
-                    to="/login"
-                    className={`px-4 py-2 rounded transition ${location.pathname === "/login" ? "bg-blue-600 text-white" : "bg-blue-500 text-white hover:bg-blue-600"}`}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/signup"
-                    className={`px-4 py-2 rounded border ${location.pathname === "/signup" ? "bg-blue-50 text-blue-600 border-blue-500" : "bg-white text-blue-600 border-blue-500 hover:bg-blue-50"}`}
-                  >
-                    Signup
-                  </Link>
-                </>
-              ) : (
                 <div className="relative" ref={dropdownRef}>
                   <button
-                    onClick={() => setDropdownOpen((p) => !p)}
-                    className="text-white font-semibold flex items-center justify-center bg-blue-500 hover:bg-blue-600 rounded-full w-10 h-10"
-                    aria-label="Open account menu"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-500 text-white focus:outline-none"
                   >
-                    <span role="img" aria-label="user">👤</span>
+                    {userInfo?.username?.charAt(0).toUpperCase() || "👤"}
                   </button>
-
                   {dropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                      <div className="p-4 text-sm text-gray-800 space-y-1">
-                        <p><strong>Username:</strong> {userInfo?.username || "N/A"}</p>
-                        <p><strong>Email:</strong> {userInfo?.email || "N/A"}</p>
-                        <p><strong>Role:</strong> {userInfo?.role || "User"}</p>
-                      </div>
-                      <div className="border-t p-2">
+                    <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                      <div className="py-1">
+                        <div className="px-4 py-2 text-sm text-gray-700">
+                          <div>Signed in as</div>
+                          <div className="font-medium truncate">{userInfo?.username || "User"}</div>
+                          <div className="text-xs text-gray-500">{userInfo?.email || "Email"}</div>
+                           <div className="text-xs text-gray-500">{userInfo?.role || "Role"}</div>
+
+
+                        </div>
+                        <Link
+                          to="/profile"
+                          onClick={() => setDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Your Profile
+                        </Link>
                         <button
                           onClick={handleLogout}
-                          className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded"
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                         >
-                          Logout
+                          Sign out
                         </button>
                       </div>
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          </>
-        )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Mobile menu (simple) */}
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div ref={mobileMenuRef} className="md:hidden bg-white shadow-lg border-t border-gray-200">
-          <div className="p-4 space-y-3">
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search services..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none"
-              />
-              <button type="submit" className="px-3 py-2 bg-blue-500 text-white rounded-md">Search</button>
-            </form>
+        <div ref={mobileMenuRef} className="md:hidden bg-white shadow-xl">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <Link
+              to="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === "/" ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"}`}
+            >
+              Home
+            </Link>
 
-            <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block px-2 py-2">Home</Link>
+            <Link
+              to="/provider"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === "/provider" ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"}`}
+            >
+              Become a Provider
+            </Link>
 
-            <div className="border-t pt-2">
-              <p className="text-sm font-medium px-2 pb-2">Services</p>
-              <div className="grid grid-cols-2 gap-2 px-2">
-                {services.map((s) => (
-                  <Link
-                    key={s.path}
-                    to={`/services/${s.path}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 bg-gray-50 rounded"
+            <div>
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={() => setServicesOpen(!servicesOpen)}
+                  className={`w-full flex justify-between items-center px-3 py-2 rounded-md text-base font-medium ${location.pathname.startsWith("/services") ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"}`}
+                >
+                  <span>Services</span>
+                  <svg
+                    className={`h-4 w-4 transition-transform ${servicesOpen ? "transform rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    {s.name}
-                  </Link>
-                ))}
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {servicesOpen && (
+                  <button 
+                    onClick={() => setServicesOpen(false)}
+                    className="mr-2 text-gray-400 hover:text-gray-500"
+                  >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
-            </div>
 
-            <div className="border-t pt-2 flex flex-col gap-2">
-              <Link to="/provider" onClick={() => setMobileMenuOpen(false)} className="px-2 py-2">Become a Provider</Link>
-              {!isLoggedIn ? (
-                <>
-                  <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="px-2 py-2">Login</Link>
-                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)} className="px-2 py-2">Signup</Link>
-                </>
-              ) : (
-                <>
-                  <div className="px-2 py-2 text-sm">
-                    <div><strong>{userInfo?.username}</strong></div>
-                    <div className="text-xs text-gray-500">{userInfo?.email}</div>
-                  </div>
-                  <button onClick={handleLogout} className="w-full text-left px-2 py-2 text-red-600">Logout</button>
-                </>
+              {servicesOpen && (
+                <div className="px-4 pt-2 pb-4 space-y-2">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">
+                    Professional technicians
+                  </h3>
+                  {services.slice(0, 5).map((service) => (
+                    <Link
+                      key={service.path}
+                      to={`/services/${service.path}`}
+                      onClick={handleServiceClick}
+                      className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      <span className="mr-2">{service.icon}</span>
+                      <div>
+                        <div>{service.name}</div>
+                        <div className="text-xs text-gray-500">{service.description}</div>
+                      </div>
+                    </Link>
+                  ))}
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 mt-3">
+                    Affordable services
+                  </h3>
+                  {services.slice(5).map((service) => (
+                    <Link
+                      key={service.path}
+                      to={`/services/${service.path}`}
+                      onClick={handleServiceClick}
+                      className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      <span className="mr-2">{service.icon}</span>
+                      <div>
+                        <div>{service.name}</div>
+                        <div className="text-xs text-gray-500">{service.description}</div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               )}
             </div>
+
+            {isLoggedIn && (
+              <Link
+                to="/book"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-md text-base font-medium text-white bg-green-600 hover:bg-green-700"
+              >
+                Book Now
+              </Link>
+            )}
+          </div>
+
+          <div className="pt-4 pb-3 border-t border-gray-200">
+            {isLoggedIn ? (
+              <div className="flex items-center px-5">
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                    {userInfo?.username?.charAt(0).toUpperCase() || "👤"}
+                  </div>
+                </div>
+                <div className="ml-3">
+                  <div className="text-base font-medium text-gray-800">{userInfo?.username || "User"}</div>
+                  <div className="text-sm font-medium text-gray-500">{userInfo?.email || "N/A"}</div>
+                </div>
+              </div>
+            ) : (
+              <div className="px-2 space-y-1">
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full px-3 py-2 rounded-md text-base font-medium text-blue-700 hover:bg-blue-50"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full px-3 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+
+            {isLoggedIn && (
+              <div className="mt-3 px-2 space-y-1">
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  Your Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

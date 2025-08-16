@@ -38,6 +38,7 @@ import RoleRoute from "./Components/Pages/RoleRoute";
 // Dashboards
 import AdminDashboard from "./Components/Pages/admin/AdminDashboard";
 import ProviderDashboard from "./Components/Pages/provider/ProviderDashboard";
+import ProfilePage from "./Components/Pages/Profile";
 
 const App: React.FC = () => {
   const location = useLocation();
@@ -77,7 +78,7 @@ const App: React.FC = () => {
         <Route path="/services/carpentry" element={<Carpentry />} />
         <Route path="/services/groceries" element={<Groceries />} />
         <Route path="/services/tutors" element={<Tutors />} />
-        <Route path="/services/tailors" element={<Tailors />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
         {/* Admin Protected Routes */}
         <Route element={<RoleRoute allowedRoles={["admin"]} />}>
