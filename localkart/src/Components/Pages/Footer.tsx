@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from 'react-icons/fa';
+import { useAuth } from '../../Contexts/AuthContext';
 
 const Footer = () => {
+  const { isLoggedIn } = useAuth(); // Get authentication status
+
   return (
     <footer className="bg-gradient-to-b from-gray-900 to-gray-800 text-gray-300 px-6 py-16 relative overflow-hidden">
       {/* Decorative elements */}
@@ -43,42 +46,56 @@ const Footer = () => {
               Our Services
             </h3>
             <ul className="space-y-3">
-              <li>
-                <Link 
-                  to="/services/plumbing" 
-                  className="flex items-center text-gray-400 hover:text-white transition-colors group"
-                >
-                  <span className="w-1 h-1 bg-blue-500 rounded-full mr-3 group-hover:w-2 transition-all"></span>
-                  Plumbing Solutions
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/services/electrician" 
-                  className="flex items-center text-gray-400 hover:text-white transition-colors group"
-                >
-                  <span className="w-1 h-1 bg-blue-500 rounded-full mr-3 group-hover:w-2 transition-all"></span>
-                  Electrical Services
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/services/cleaning" 
-                  className="flex items-center text-gray-400 hover:text-white transition-colors group"
-                >
-                  <span className="w-1 h-1 bg-blue-500 rounded-full mr-3 group-hover:w-2 transition-all"></span>
-                  Professional Cleaning
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/services/groceries" 
-                  className="flex items-center text-gray-400 hover:text-white transition-colors group"
-                >
-                  <span className="w-1 h-1 bg-blue-500 rounded-full mr-3 group-hover:w-2 transition-all"></span>
-                  Grocery Delivery
-                </Link>
-              </li>
+              {isLoggedIn ? (
+                <>
+                  <li>
+                    <Link 
+                      to="/services/plumbing" 
+                      className="flex items-center text-gray-400 hover:text-white transition-colors group"
+                    >
+                      <span className="w-1 h-1 bg-blue-500 rounded-full mr-3 group-hover:w-2 transition-all"></span>
+                      Plumbing Solutions
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/services/electrician" 
+                      className="flex items-center text-gray-400 hover:text-white transition-colors group"
+                    >
+                      <span className="w-1 h-1 bg-blue-500 rounded-full mr-3 group-hover:w-2 transition-all"></span>
+                      Electrical Services
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/services/cleaning" 
+                      className="flex items-center text-gray-400 hover:text-white transition-colors group"
+                    >
+                      <span className="w-1 h-1 bg-blue-500 rounded-full mr-3 group-hover:w-2 transition-all"></span>
+                      Professional Cleaning
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/services/groceries" 
+                      className="flex items-center text-gray-400 hover:text-white transition-colors group"
+                    >
+                      <span className="w-1 h-1 bg-blue-500 rounded-full mr-3 group-hover:w-2 transition-all"></span>
+                      Grocery Delivery
+                    </Link>
+                  </li>
+                </>
+              ) : (
+                <li>
+                  <Link 
+                    to="/login" 
+                    className="flex items-center text-gray-400 hover:text-white transition-colors group"
+                  >
+                    <span className="w-1 h-1 bg-blue-500 rounded-full mr-3 group-hover:w-2 transition-all"></span>
+                    Login to access services
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 

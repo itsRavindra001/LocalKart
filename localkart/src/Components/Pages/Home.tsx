@@ -1,8 +1,9 @@
 // src/Components/Pages/Home.tsx
 import React, { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import Hero from './Hero';
 import { motion } from 'framer-motion';
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../Contexts/AuthContext";
 
 const popularServices = [
   { name: 'Plumbing', img: 'https://img.freepik.com/free-vector/plumbing-service-advertising-banner-repairman-uniform-standing-with-wrench-hand-tools-box-near-sink_575670-1705.jpg?semt=ais_hybrid&w=740', to: '/services/plumbing' },
@@ -15,6 +16,17 @@ const popularServices = [
   { name: 'Groceries', img: 'https://i.pinimg.com/originals/5d/6b/5b/5d6b5b167c0877f7079ddff8c4861fe4.jpg', to: '/services/groceries' },
   { name: 'Tutors', img: 'https://thumbs.dreamstime.com/b/teacher-helping-student-studies-school-desk-cartoon-illustration-cartoon-illustration-teacher-helping-student-376254486.jpg', to: '/services/tutors' },
   { name: 'Tailors', img: 'https://t4.ftcdn.net/jpg/09/07/28/05/360_F_907280531_QxHlhpy9nJjLsHI2AhGl9Z0t9j09wEZl.jpg', to: '/services/tailors' }
+];
+
+const whyLocalKart = [
+  ['🔍', 'Easy Search', 'Find services quickly with our smart search'],
+  ['📅', 'Book Instantly', 'Select time slots that work for you'],
+  ['👤', 'Trusted Providers', 'All service providers are verified'],
+  ['✅', 'Quality Assured', '100% satisfaction guarantee'],
+  ['💸', 'Affordable Pricing', 'Transparent and competitive rates'],
+  ['🔐', 'Secure Payments', 'Pay safely with encrypted transactions'],
+  ['📞', '24/7 Support', 'Always here to help via chat or call'],
+  ['🌐', 'Wide Reach', 'Available across multiple cities and towns']
 ];
 
 const steps = [
@@ -44,19 +56,9 @@ const steps = [
   }
 ];
 
-const whyLocalKart = [
-  ['🔍', 'Easy Search', 'Find services quickly with our smart search'],
-  ['📅', 'Book Instantly', 'Select time slots that work for you'],
-  ['👤', 'Trusted Providers', 'All service providers are verified'],
-  ['✅', 'Quality Assured', '100% satisfaction guarantee'],
-  ['💸', 'Affordable Pricing', 'Transparent and competitive rates'],
-  ['🔐', 'Secure Payments', 'Pay safely with encrypted transactions'],
-  ['📞', '24/7 Support', 'Always here to help via chat or call'],
-  ['🌐', 'Wide Reach', 'Available across multiple cities and towns']
-];
-
 const Home: React.FC = () => {
-  // store refs to step containers
+  const { isLoggedIn } = useAuth();
+  const navigate = useNavigate();
   const stepsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -65,19 +67,17 @@ const Home: React.FC = () => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('opacity-100', 'translate-y-0');
-            entry.target.classList.remove('opacity-0', 'translate-y-10');
+            entry.target.classList.remove('opacity-0', 'translate-y-6');
           }
         });
       },
       { threshold: 0.15 }
     );
 
-    // observe each step element if present
     stepsRef.current.forEach((el) => {
       if (el) observer.observe(el);
     });
 
-    // cleanup
     return () => {
       observer.disconnect();
     };
@@ -87,120 +87,65 @@ const Home: React.FC = () => {
     <div className="font-sans text-gray-800 overflow-x-hidden">
       <Hero />
 
-      {/* Popular Services */}
-      <section className="w-full py-20 px-4 bg-gradient-to-r from-sky-50 to-emerald-50">
-        <div className="max-w-screen-xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-500 mb-12">
-            Popular Services
-          </h2>
+     {/* Popular Services */}
+<section className="w-full py-24 px-6 bg-gradient-to-br from-blue-50/30 to-emerald-50/30">
+  <div className="max-w-7xl mx-auto">
+    <motion.h2 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      viewport={{ once: true }}
+      className="text-4xl font-extrabold text-center mb-16"
+    >
+      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-500">
+        Popular Services
+      </span>
+    </motion.h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-10 justify-items-center">
-            {popularServices.slice(0, 10).map((svc) => (
-              <Link
-                key={svc.name}
-                to={svc.to}
-                className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 w-60"
-              >
-                <div className="relative pt-[80%] overflow-hidden rounded-t-2xl">
-                  <img
-                    src={svc.img}
-                    alt={svc.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">
-                    {svc.name}
-                  </h3>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {popularServices.length > 10 && (
-            <div className="mt-12 flex justify-center">
-              <div className="flex flex-wrap gap-10 justify-center">
-                {popularServices.slice(10).map((svc) => (
-                  <Link
-                    key={svc.name}
-                    to={svc.to}
-                    className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 w-60"
-                  >
-                    <div className="relative pt-[75%] overflow-hidden rounded-t-2xl">
-                      <img
-                        src={svc.img}
-                        alt={svc.name}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">
-                        {svc.name}
-                      </h3>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+      {popularServices.map((svc) => (
+        <motion.div
+          key={svc.name}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          viewport={{ once: true }}
+          className="group"
+        >
+          <Link
+            to={isLoggedIn ? svc.to : "/login"}
+            className="block bg-white rounded-2xl shadow-lg hover:shadow-xl overflow-hidden transition-all duration-300 border border-gray-100"
+          >
+            <div className="relative pt-[100%] overflow-hidden">
+              <img
+                src={svc.img}
+                alt={svc.name}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
             </div>
+            <div className="p-5">
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                {svc.name}
+              </h3>
+            </div>
+          </Link>
+          {!isLoggedIn && (
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-xs text-red-500 mt-2 text-center"
+            >
+              
+            </motion.p>
           )}
-        </div>
-      </section>
+        </motion.div>
+      ))}
+    </div>
+  </div>
+</section>
 
-       {/* Call to Action */}
-      <section className="relative py-24 px-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-[100px]"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 rounded-full filter blur-[100px]"></div>
-        </div>
-        
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-extrabold mb-6"
-          >
-            Ready to Get Started?
-          </motion.h2>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            viewport={{ once: true }}
-            className="text-lg md:text-xl text-blue-100 mb-10 max-w-2xl mx-auto"
-          >
-            Join thousands of satisfied customers and service providers
-          </motion.p>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            viewport={{ once: true }}
-            className="flex flex-wrap justify-center gap-6"
-          >
-            <Link
-              to="/book"
-              className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center"
-            >
-              <span>Book Services</span>
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-              </svg>
-            </Link>
-            <Link
-              to="/provider"
-              className="px-8 py-4 bg-blue-500/10 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border border-blue-300/30 hover:bg-blue-500/20"
-            >
-              Become a Provider
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-     {/* Why Choose LocalKart */}
+      {/* Why Choose LocalKart */}
       <section className="py-20 px-4 bg-white">
         <div className="max-w-screen-xl mx-auto">
           <motion.h2 
@@ -208,7 +153,7 @@ const Home: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-16"
+            className="text-3xl md:text-4xl font-extrabold text-center text-gray-909 mb-16"
           >
             Why Choose <span className="text-blue-600">LocalKart</span>?
           </motion.h2>
@@ -237,52 +182,49 @@ const Home: React.FC = () => {
       </section>
 
       {/* How LocalKart Works */}
-<section className="relative py-12 px-4 bg-gradient-to-br from-blue-50 via-white to-emerald-50 font-sans">
-  <h2 className="text-2xl md:text-3xl font-bold text-blue-700 text-center mb-12">
-    How LocalKart Works
-  </h2>
+      <section className="relative py-12 px-4 bg-gradient-to-br from-blue-50 via-white to-emerald-50">
+        <h2 className="text-2xl md:text-3xl font-bold text-blue-700 text-center mb-12">
+          How LocalKart Works
+        </h2>
 
-  <div className="relative max-w-5xl mx-auto flex flex-col gap-10 lg:gap-14">
-    <span className="hidden lg:block absolute left-1/2 top-0 h-full w-0.5 bg-blue-200 rounded-full -translate-x-1/2" />
+        <div className="relative max-w-5xl mx-auto flex flex-col gap-10 lg:gap-14">
+          <span className="hidden lg:block absolute left-1/2 top-0 h-full w-0.5 bg-blue-200 rounded-full -translate-x-1/2" />
 
-    {steps.map((step, i) => (
-      <div
-        key={i}
-        ref={(el) => {
-          stepsRef.current[i] = el ?? null;
-        }}
-        className={`group relative flex flex-col lg:flex-row items-center lg:items-start gap-6
-          transform transition-all duration-700 opacity-0 translate-y-6
-          ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}
-      >
-        {/* Timeline Dot */}
-        <div className="hidden lg:flex flex-col items-center">
-          <span className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-[12px] text-white font-bold flex items-center justify-center shadow-lg">
-            {i + 1}
-          </span>
-          <span className="flex-1 bg-blue-200 w-0.5" />
+          {steps.map((step, i) => (
+            <div
+              key={i}
+              ref={(el) => { stepsRef.current[i] = el }}
+              className={`group relative flex flex-col lg:flex-row items-center lg:items-start gap-6
+                opacity-0 translate-y-6 transition-all duration-700
+                ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}
+            >
+              {/* Timeline Dot */}
+              <div className="hidden lg:flex flex-col items-center">
+                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-[12px] text-white font-bold flex items-center justify-center shadow-lg">
+                  {i + 1}
+                </span>
+                <span className="flex-1 bg-blue-200 w-0.5" />
+              </div>
+
+              {/* Step Card */}
+              <div className="w-full lg:w-1/2 backdrop-blur-sm bg-white/90 p-6 rounded-xl shadow-lg ring-1 ring-blue-100 transition-transform duration-300 hover:scale-105">
+                <div className="text-2xl mb-2">{step.icon}</div>
+                <h3 className="text-lg font-semibold text-blue-700 mb-2">{step.title}</h3>
+                <p className="text-gray-600 text-sm">{step.desc}</p>
+              </div>
+
+              {/* Image */}
+              <div className="w-full lg:w-1/2 flex justify-center">
+                <img
+                  src={step.img}
+                  alt={step.title}
+                  className="rounded-xl w-full max-w-[160px] mx-auto shadow-lg group-hover:shadow-md transition"
+                />
+              </div>
+            </div>
+          ))}
         </div>
-
-        {/* Step Card */}
-        <div className="w-full lg:w-1/2 backdrop-blur-sm bg-white/90 p-6 rounded-xl shadow-lg ring-1 ring-blue-100 transition-transform duration-300 hover:scale-105">
-          <div className="text-2xl mb-2">{step.icon}</div>
-          <h3 className="text-lg font-semibold text-blue-700 mb-2">{step.title}</h3>
-          <p className="text-gray-600 text-sm">{step.desc}</p>
-        </div>
-
-        {/* Image */}
-        <div className="w-full lg:w-1/2 flex justify-center">
-          <img
-            src={step.img || 'https://via.placeholder.com/160'} // Placeholder image
-            alt={step.title}
-            className="rounded-xl w-full max-w-[160px] mx-auto shadow-lg group-hover:shadow-md transition"
-          />
-        </div>
-      </div>
-    ))}
-  </div>
-</section>
-
+      </section>
     </div>
   );
 };

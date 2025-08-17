@@ -148,6 +148,11 @@ const Navbar: React.FC = () => {
   };
 
   const handleServiceNavigate = (path: string) => {
+    if (!isLoggedIn) {
+      navigate('/login', { state: { from: `/services/${path}` } });
+      closeAllMenus();
+      return;
+    }
     closeAllMenus();
     navigate(`/services/${path}`);
   };
@@ -273,7 +278,7 @@ const Navbar: React.FC = () => {
                       <div className="py-1">
                         <div className="px-4 py-2 text-sm text-gray-700">
                           <div className="text-xs text-gray-500">Signed in as</div>
-                          <div className="font-medium truncate">{userInfo?.username || "User "}</div>
+                          <div className="font-medium truncate">{userInfo?.username || "User  "}</div>
                         </div>
                         <NavLink to="/profile" onClick={closeAllMenus} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                           Your Profile
@@ -380,7 +385,7 @@ const Navbar: React.FC = () => {
                       {userInfo?.username?.charAt(0).toUpperCase() || "U"}
                     </div>
                     <div className="ml-3">
-                      <div className="text-base font-medium text-gray-800">{userInfo?.username || "User "}</div>
+                      <div className="text-base font-medium text-gray-800">{userInfo?.username || "User  "}</div>
                       <div className="text-sm text-gray-500">{userInfo?.email || "N/A"}</div>
                     </div>
                   </div>

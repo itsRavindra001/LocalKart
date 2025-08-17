@@ -8,10 +8,10 @@ const HouseCleaning = () => {
   const navigate = useNavigate();
 
   const houseCleaningImages = [
-    'https://cdn.pixabay.com/photo/2024/07/28/17/51/woman-8928096_640.png',
-    'https://media.istockphoto.com/id/1409789197/vector/professional-cleaner-with-a-sanitizing-spray-and-a-mop-vector-illustration.jpg?s=612x612&w=0&k=20&c=GYjqPrZYdkwkb7-NmKjMhcvRhW0fEFST5ivflHSwb1U=',
-    'https://img.freepik.com/free-vector/cleaners-with-cleaning-products-housekeeping-service_18591-52068.jpg?semt=ais_hybrid',
-    'https://static.vecteezy.com/system/resources/thumbnails/001/984/801/small/housekeeping-team-with-cleaning-equipment-free-vector.jpg',
+    'https://t3.ftcdn.net/jpg/13/13/87/28/360_F_1313872820_YWTud0RzadVOEdkABw7GuGe27wHaOhNn.jpg',
+    'https://t3.ftcdn.net/jpg/12/07/51/20/360_F_1207512075_obhiVzNJwMDNDKqE5M4lDCPDSgGGGIs7.jpg',
+    'https://media.istockphoto.com/id/1417833128/photo/professional-cleaner-vacuuming-a-sofa.jpg?s=612x612&w=0&k=20&c=vW3E0j3SIwTw1fTQPZ3eb9eAa8WKbs3lozEjcFTJPjI=',
+    'https://img.freepik.com/free-photo/professional-cleaning-service-person-using-steam-cleaner-office_23-2150520602.jpg?semt=ais_hybrid&w=740&q=80',
   ];
 
   const features = [

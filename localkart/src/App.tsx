@@ -5,6 +5,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 // Common components
 import Navbar from "./Components/Pages/Navbar";
 import Footer from "./Components/Pages/Footer";
+import ScrollToTop from "./ScrollToTop"; 
 
 // Public pages
 import Home from "./Components/Pages/Home";
@@ -51,7 +52,9 @@ const App: React.FC = () => {
   return (
     <>
       {!hideNavFooter && <Navbar />}
+      <ScrollToTop />
 
+      {/* Render the TestAuth component only on the /test-auth route */}
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />

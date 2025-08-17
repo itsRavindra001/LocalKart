@@ -4,7 +4,7 @@ import ServicePageLayout from '../ServicePageLayout';
 
 const Tailors = () => {
   const tailorsImages = [
-    'https://cdn.pixabay.com/photo/2022/03/13/01/41/tailoring-7065117_640.jpg',
+    'https://swstitching.ca/wp-content/uploads/2024/04/Custom-Tailoring.webp',
     'https://img.freepik.com/premium-photo/young-man-tailor-working-new-clothing_85869-8158.jpg?semt=ais_hybrid',
     'https://img.freepik.com/premium-photo/tailor-sewing-jacket-closeup_236854-8031.jpg?semt=ais_hybrid&w=740',
     'https://media.gettyimages.com/id/1072509440/photo/male-tailor-cutting-a-textile-at-workbench.jpg?s=612x612&w=0&k=20&c=hwODCZMAUgmcZ_iB_9VrtMwJbBmlPxNZj4_rLqHlLi8=',
