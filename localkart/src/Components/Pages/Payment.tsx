@@ -6,7 +6,13 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { OpenStreetMapProvider } from 'leaflet-geosearch';
-import type { SearchResult } from 'leaflet-geosearch';
+interface SearchResult {
+  x: number;
+  y: number;
+  label: string;
+  bounds?: [[number, number], [number, number]];
+  raw?: any;
+}
 
 // Fix for default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;

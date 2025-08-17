@@ -13,6 +13,9 @@ const TestAuth: React.FC = () => {
     role: "client" as "client" | "admin" | "provider", // explicit union type
   };
 
+  // Dummy token (since login expects 2 arguments)
+  const dummyToken = "dummy-jwt-token";
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white shadow-lg rounded-lg p-6 w-80 text-center">
@@ -25,7 +28,8 @@ const TestAuth: React.FC = () => {
             if (isLoggedIn) {
               logout();
             } else {
-              login(dummyUser); // Correctly typed user object
+              // Pass both required arguments: user + token
+              login(dummyUser, dummyToken);
             }
           }}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition"
