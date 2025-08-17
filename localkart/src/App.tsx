@@ -78,6 +78,7 @@ const App: React.FC = () => {
         <Route path="/services/carpentry" element={<Carpentry />} />
         <Route path="/services/groceries" element={<Groceries />} />
         <Route path="/services/tutors" element={<Tutors />} />
+        <Route path="/services/tailors" element={<Tailors />} />
         <Route path="/profile" element={<ProfilePage />} />
 
         {/* Admin Protected Routes */}

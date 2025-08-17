@@ -1,4 +1,3 @@
-// src/Components/Pages/ProfilePage.tsx
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../Contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -13,26 +12,62 @@ import {
   ListItemText,
   CircularProgress,
   Box,
+  Alert,
 } from "@mui/material";
 
+interface UserData {
+  username: string;
+  email: string;
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  isVerified: boolean;
+  createdAt: string;
+  lastLogin: string;
+  profileImage?: string;
+}
+
 const ProfilePage = () => {
-  const { userInfo, logout, updateUserInfo } = useAuth();
+  const { userInfo, logout, token } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchProfileData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://your-backend-api.com/api/user/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile data');
+        }
+
+        const data: UserData = await response.json();
+        setUserData(data);
+      } catch (err) {
+        setError(err.message);
+        console.error("Profile fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, [token]);
 
   const handleEditProfile = () => {
     navigate("/profile/edit");
   };
 
   const handleVerifyEmail = () => {
-    updateUserInfo({ isVerified: true });
+    // Implement email verification logic
     alert("Verification email sent!");
   };
 
@@ -49,7 +84,22 @@ const ProfilePage = () => {
     );
   }
 
-  if (!userInfo) {
+  if (error) {
+    return (
+      <Box sx={{ p: 4, maxWidth: "800px", mx: "auto" }}>
+        <Alert severity="error">{error}</Alert>
+        <Button 
+          variant="contained" 
+          sx={{ mt: 2 }}
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!userData) {
     return (
       <Box sx={{ p: 4, maxWidth: "800px", mx: "auto" }}>
         <Typography variant="h5" gutterBottom>
@@ -75,8 +125,8 @@ const ProfilePage = () => {
           }}
         >
           <Avatar
-            alt={userInfo.username}
-            src={userInfo.profileImage || "/default-avatar.png"}
+            alt={userData.username}
+            src={userData.profileImage || "/default-avatar.png"}
             sx={{
               width: 100,
               height: 100,
@@ -86,11 +136,11 @@ const ProfilePage = () => {
           />
           <Box>
             <Typography variant="h4" gutterBottom>
-              {userInfo.username}
+              {userData.username}
             </Typography>
             <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-              {userInfo.email}
-              {!userInfo.isVerified && (
+              {userData.email}
+              {!userData.isVerified && (
                 <Button
                   size="small"
                   color="warning"
@@ -102,12 +152,10 @@ const ProfilePage = () => {
               )}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Member since:{" "}
-              {new Date(userInfo.createdAt || Date.now()).toLocaleDateString()}
+              Member since: {new Date(userData.createdAt).toLocaleDateString()}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Last login:{" "}
-              {new Date(userInfo.lastLogin || Date.now()).toLocaleString()}
+              Last login: {new Date(userData.lastLogin).toLocaleString()}
             </Typography>
           </Box>
         </Box>
@@ -123,54 +171,23 @@ const ProfilePage = () => {
             <ListItem>
               <ListItemText
                 primary="Full Name"
-                secondary={userInfo.fullName || "Not provided"}
+                secondary={userData.fullName || "Not provided"}
               />
             </ListItem>
             <ListItem>
               <ListItemText
                 primary="Phone Number"
-                secondary={userInfo.phone || "Not provided"}
+                secondary={userData.phone || "Not provided"}
               />
             </ListItem>
             <ListItem>
               <ListItemText
                 primary="Address"
-                secondary={userInfo.address || "Not provided"}
+                secondary={userData.address || "Not provided"}
               />
             </ListItem>
           </List>
         </Box>
-
-        {/* Provider Info */}
-        {userInfo.role === "provider" && (
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              Service Provider Information
-            </Typography>
-            <List>
-              <ListItem>
-                <ListItemText
-                  primary="Services Offered"
-                  secondary={userInfo.services?.join(", ") || "None"}
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemText
-                  primary="Rating"
-                  secondary={
-                    userInfo.rating ? `${userInfo.rating}/5` : "Not rated yet"
-                  }
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemText
-                  primary="Completed Jobs"
-                  secondary={userInfo.completedJobs || "0"}
-                />
-              </ListItem>
-            </List>
-          </Box>
-        )}
 
         {/* Action Buttons */}
         <Box

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import emailjs from "@emailjs/browser";
 import MapPicker from "./MapPicker";
+import { Link } from "react-router-dom";
 import {
   FiCheckCircle,
   FiAlertCircle,
@@ -12,6 +13,8 @@ import {
   FiPhone,
   FiMail,
   FiRotateCw,
+  FiStar,
+  FiClock,
 } from "react-icons/fi";
 
 declare global {
@@ -53,16 +56,16 @@ interface FormErrors {
 }
 
 const SERVICES = [
-  { name: "Plumbing", price: 250, icon: "🛠️" },
-  { name: "Electrician", price: 300, icon: "⚡" },
-  { name: "AC Repair", price: 500, icon: "❄️" },
-  { name: "Salon at Home", price: 400, icon: "✂️" },
-  { name: "House Cleaning", price: 350, icon: "🧹" },
-  { name: "Painting", price: 450, icon: "🎨" },
-  { name: "Carpentry", price: 300, icon: "🪚" },
-  { name: "Pest Control", price: 600, icon: "🐜" },
-  { name: "Tutors", price: 200, icon: "📚" },
-  { name: "Tailors", price: 150, icon: "🧵" },
+  { name: "Plumbing", price: 250, icon: "🛠️", color: "bg-blue-100 text-blue-800" },
+  { name: "Electrician", price: 300, icon: "⚡", color: "bg-yellow-100 text-yellow-800" },
+  { name: "AC Repair", price: 500, icon: "❄️", color: "bg-cyan-100 text-cyan-800" },
+  { name: "Salon at Home", price: 400, icon: "✂️", color: "bg-pink-100 text-pink-800" },
+  { name: "House Cleaning", price: 350, icon: "🧹", color: "bg-green-100 text-green-800" },
+  { name: "Painting", price: 450, icon: "🎨", color: "bg-purple-100 text-purple-800" },
+  { name: "Carpentry", price: 300, icon: "🪚", color: "bg-amber-100 text-amber-800" },
+  { name: "Pest Control", price: 600, icon: "🐜", color: "bg-red-100 text-red-800" },
+  { name: "Tutors", price: 200, icon: "📚", color: "bg-indigo-100 text-indigo-800" },
+  { name: "Tailors", price: 150, icon: "🧵", color: "bg-teal-100 text-teal-800" },
 ];
 
 const BookingPage: React.FC = () => {
@@ -334,286 +337,379 @@ const BookingPage: React.FC = () => {
   const selectedPrice = getServicePrice();
 
   return (
-    <section className="min-h-screen bg-gray-50 px-4 py-12">
-      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-xl shadow p-6">
-          <header className="mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Book a Service</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Quick — pick a service, select a provider, choose date & location.
-            </p>
-          </header>
+    <section className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-12">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <header className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">Book a Service</h1>
+              <p className="text-gray-600 mt-2">
+                Quick — pick a service, select a provider, choose date & location.
+              </p>
+            </header>
 
-          {errors.general && (
-            <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3 flex items-start gap-3">
-              <FiAlertCircle className="text-red-500 mt-0.5" />
-              <div className="text-sm text-red-700">{errors.general}</div>
-            </div>
-          )}
-
-          {!success ? (
-            <>
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Choose a service</h3>
-                {errors.service && <div className="text-xs text-red-500 mb-1">{errors.service}</div>}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {SERVICES.map((svc) => (
-                    <button
-                      key={svc.name}
-                      type="button"
-                      onClick={() => handleServiceSelect(svc.name)}
-                      className={`flex flex-col items-center gap-1 p-3 rounded-lg border text-sm transition ${
-                        formData.service === svc.name ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-indigo-300"
-                      }`}
-                      aria-pressed={formData.service === svc.name}
-                    >
-                      <div className="text-2xl">{svc.icon}</div>
-                      <div className="font-medium text-gray-800">{svc.name}</div>
-                      <div className="text-xs text-gray-600">₹{svc.price}</div>
-                    </button>
-                  ))}
-                </div>
+            {errors.general && (
+              <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 flex items-start gap-3">
+                <FiAlertCircle className="text-red-500 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-red-700">{errors.general}</div>
               </div>
+            )}
 
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Pick a provider</h3>
-                {errors.providerId && <div className="text-xs text-red-500 mb-1">{errors.providerId}</div>}
-                {loadingProviders ? (
-                  <div className="py-6 flex items-center justify-center text-gray-500">
-                    <FiLoader className="animate-spin mr-2" />Loading providers...
-                  </div>
-                ) : providers.length === 0 ? (
-                  <div className="text-sm text-gray-500 py-4">No providers loaded. Select a service to load providers.</div>
-                ) : (
-                  <div className="space-y-3">
-                    {providers.map((p) => (
-                      <div key={p._id} className={`p-3 rounded-lg border flex items-center justify-between ${formData.providerId === p._id ? "border-indigo-600 bg-indigo-50" : "border-gray-200"}`}>
-                        <div>
-                          <div className="font-medium">{p.name || p.username}</div>
-                          <div className="text-xs text-gray-500">{p.experience ? `${p.experience} yrs` : ""} {p.rating ? `• ⭐ ${p.rating}` : ""}</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleProviderSelect(p._id)}
-                            className="px-3 py-1 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700"
-                          >
-                            Select
-                          </button>
-                        </div>
-                      </div>
+            {!success ? (
+              <>
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Choose a service</h3>
+                  {errors.service && <div className="text-sm text-red-500 mb-2">{errors.service}</div>}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {SERVICES.map((svc) => (
+                      <button
+                        key={svc.name}
+                        type="button"
+                        onClick={() => handleServiceSelect(svc.name)}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                          formData.service === svc.name 
+                            ? `border-indigo-600 ${svc.color.replace('text', 'bg')} shadow-md` 
+                            : "border-gray-200 hover:border-indigo-300 hover:shadow-sm"
+                        }`}
+                        aria-pressed={formData.service === svc.name}
+                      >
+                        <div className="text-3xl">{svc.icon}</div>
+                        <div className="font-medium text-gray-800 text-sm">{svc.name}</div>
+                        <div className="text-xs font-semibold text-gray-600">₹{svc.price}</div>
+                      </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Your Provider</h3>
+                  {errors.providerId && <div className="text-sm text-red-500 mb-2">{errors.providerId}</div>}
+                  {loadingProviders ? (
+                    <div className="py-8 flex flex-col items-center justify-center text-gray-500">
+                      <FiLoader className="animate-spin text-2xl mb-2" />
+                      <span>Loading available providers...</span>
+                    </div>
+                  ) : providers.length === 0 ? (
+                    <div className="text-center py-8 bg-gray-50 rounded-lg">
+                      <div className="text-gray-500 mb-2">No providers loaded</div>
+                      <div className="text-sm text-gray-400">Select a service to see available providers</div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {providers.map((p) => (
+                        <div 
+                          key={p._id} 
+                          className={`p-4 rounded-xl border-2 transition-all ${formData.providerId === p._id ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-indigo-300"}`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="font-semibold text-gray-800">{p.name || p.username}</div>
+                              <div className="flex items-center gap-3 mt-2 text-sm text-gray-600">
+                                {p.rating && (
+                                  <span className="flex items-center gap-1">
+                                    <FiStar className="text-yellow-500" />
+                                    {p.rating.toFixed(1)}
+                                  </span>
+                                )}
+                                {p.experience && (
+                                  <span className="flex items-center gap-1">
+                                    <FiClock />
+                                    {p.experience} yrs exp
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleProviderSelect(p._id)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                formData.providerId === p._id
+                                  ? "bg-indigo-600 text-white"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
+                            >
+                              {formData.providerId === p._id ? "Selected" : "Select"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="block">
+                      <span className="block text-sm font-medium text-gray-700 mb-1">Full name</span>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <FiUser className="text-gray-400" />
+                        </div>
+                        <input
+                          name="name"
+                          value={formData.name}
+                          onChange={(e) => {
+                            setFormData((prev) => ({ ...prev, name: e.target.value }));
+                            setErrors((prev) => ({ ...prev, name: undefined }));
+                          }}
+                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
+                          placeholder="Your full name"
+                          required
+                        />
+                      </div>
+                      {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                    </label>
+
+                    <label className="block">
+                      <span className="block text-sm font-medium text-gray-700 mb-1">Phone number</span>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <FiPhone className="text-gray-400" />
+                        </div>
+                        <input
+                          name="phone"
+                          value={formData.phone}
+                          onChange={(e) => {
+                            setFormData((prev) => ({ ...prev, phone: e.target.value }));
+                            setErrors((prev) => ({ ...prev, phone: undefined }));
+                          }}
+                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
+                          placeholder="10–15 digits"
+                          required
+                        />
+                      </div>
+                      {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                    </label>
+                  </div>
+
+                  <label className="block">
+                    <span className="block text-sm font-medium text-gray-700 mb-1">Email address</span>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FiMail className="text-gray-400" />
+                      </div>
+                      <input
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => {
+                          setFormData((prev) => ({ ...prev, email: e.target.value }));
+                          setErrors((prev) => ({ ...prev, email: undefined }));
+                        }}
+                        className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
+                        placeholder="you@example.com"
+                        required
+                      />
+                    </div>
+                    {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="block">
+                      <span className="block text-sm font-medium text-gray-700 mb-1">Service date</span>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <FiCalendar className="text-gray-400" />
+                        </div>
+                        <input
+                          name="date"
+                          type="date"
+                          min={new Date().toISOString().split("T")[0]}
+                          value={formData.date}
+                          onChange={(e) => {
+                            setFormData((prev) => ({ ...prev, date: e.target.value }));
+                            setErrors((prev) => ({ ...prev, date: undefined }));
+                          }}
+                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.date ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
+                          required
+                        />
+                      </div>
+                      {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date}</p>}
+                    </label>
+
+                    <label className="block">
+                      <span className="block text-sm font-medium text-gray-700 mb-1">Quick captcha</span>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <FiRotateCw className="text-gray-400" />
+                        </div>
+                        <input
+                          name="captcha"
+                          type="number"
+                          value={formData.captcha}
+                          onChange={(e) => {
+                            setFormData((prev) => ({ ...prev, captcha: e.target.value }));
+                            setErrors((prev) => ({ ...prev, captcha: undefined }));
+                          }}
+                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.captcha ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
+                          placeholder={captcha.question}
+                          required
+                        />
+                        <button 
+                          type="button" 
+                          onClick={generateCaptcha}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-indigo-600 hover:text-indigo-800"
+                        >
+                          <FiRotateCw className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-xs text-gray-500">{captcha.question}</span>
+                        {errors.captcha && <span className="text-xs text-red-600">{errors.captcha}</span>}
+                      </div>
+                    </label>
+                  </div>
+
+                  <label className="block">
+                    <span className="block text-sm font-medium text-gray-700 mb-1">Service address</span>
+                    <div className="relative">
+                      <div className="absolute top-3 left-3">
+                        <FiMapPin className="text-gray-400" />
+                      </div>
+                      <textarea
+                        name="address"
+                        rows={3}
+                        value={formData.address}
+                        onChange={(e) => {
+                          setFormData((prev) => ({ ...prev, address: e.target.value }));
+                          setErrors((prev) => ({ ...prev, address: undefined }));
+                        }}
+                        className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.address ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition resize-none`}
+                        placeholder="Full address with landmark"
+                        required
+                      />
+                    </div>
+                    {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
+                    <p className="mt-1 text-xs text-gray-500">Or pick on the map below</p>
+                  </label>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white py-3 px-4 rounded-lg font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <FiLoader className="animate-spin" />
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Pay ₹{selectedPrice} & Confirm Booking</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+                <div className="mt-8">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3">Pick location (optional)</h4>
+                  <div className="h-64 rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm">
+                    <MapPicker onLocationSelect={handleLocationSelect} initialAddress={formData.address} disabled={isSubmitting} />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+                  <FiCheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Booking Confirmed!</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  We've saved your booking and sent a confirmation to <span className="font-medium">{formData.email}</span>.
+                </p>
+                {bookingRef && (
+                  <div className="bg-gray-50 inline-block px-4 py-2 rounded-lg mb-6">
+                    <div className="text-xs text-gray-500">Reference ID</div>
+                    <div className="font-mono text-sm font-medium">{bookingRef}</div>
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    setSuccess(false);
+                    setErrors({});
+                  }}
+                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                >
+                  Book another service
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <aside className="sticky top-4 h-fit">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h4 className="text-xl font-bold text-gray-900 mb-6 pb-2 border-b">Booking Summary</h4>
+
+            <div className="space-y-5">
+              <div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Service</div>
+                {formData.service ? (
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${SERVICES.find(s => s.name === formData.service)?.color || 'bg-gray-100'}`}>
+                      {SERVICES.find(s => s.name === formData.service)?.icon || '🛠️'}
+                    </div>
+                    <div>
+                      <div className="font-semibold">{formData.service}</div>
+                      <div className="text-sm text-gray-600">₹{selectedPrice}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-gray-400 italic">Not selected</div>
                 )}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Full name</div>
-                    <div className="relative">
-                      <FiUser className="absolute left-3 top-3 text-gray-400" />
-                      <input
-                        name="name"
-                        value={formData.name}
-                        onChange={(e) => {
-                          setFormData((prev) => ({ ...prev, name: e.target.value }));
-                          setErrors((prev) => ({ ...prev, name: undefined }));
-                        }}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-                        placeholder="Your full name"
-                        required
-                      />
-                    </div>
-                    {errors.name && <div className="text-xs text-red-500 mt-1">{errors.name}</div>}
-                  </label>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Provider</div>
+                {selectedProvider ? (
+                  <div className="font-semibold">{selectedProvider.name || selectedProvider.username}</div>
+                ) : formData.providerId ? (
+                  <div className="text-indigo-600">Provider selected</div>
+                ) : (
+                  <div className="text-gray-400 italic">Not selected</div>
+                )}
+              </div>
 
-                  <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Phone</div>
-                    <div className="relative">
-                      <FiPhone className="absolute left-3 top-3 text-gray-400" />
-                      <input
-                        name="phone"
-                        value={formData.phone}
-                        onChange={(e) => {
-                          setFormData((prev) => ({ ...prev, phone: e.target.value }));
-                          setErrors((prev) => ({ ...prev, phone: undefined }));
-                        }}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
-                        placeholder="10–15 digits"
-                        required
-                      />
-                    </div>
-                    {errors.phone && <div className="text-xs text-red-500 mt-1">{errors.phone}</div>}
-                  </label>
-                </div>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Date</div>
+                {formData.date ? (
+                  <div className="font-semibold">{new Date(formData.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                ) : (
+                  <div className="text-gray-400 italic">Not selected</div>
+                )}
+              </div>
 
-                <label className="block">
-                  <div className="text-sm text-gray-700 mb-1">Email</div>
-                  <div className="relative">
-                    <FiMail className="absolute left-3 top-3 text-gray-400" />
-                    <input
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => {
-                        setFormData((prev) => ({ ...prev, email: e.target.value }));
-                        setErrors((prev) => ({ ...prev, email: undefined }));
-                      }}
-                      className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
-                      placeholder="you@example.com"
-                      required
-                    />
-                  </div>
-                  {errors.email && <div className="text-xs text-red-500 mt-1">{errors.email}</div>}
-                </label>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Address</div>
+                {formData.address ? (
+                  <div className="font-medium text-gray-800 break-words">{formData.address}</div>
+                ) : (
+                  <div className="text-gray-400 italic">Not provided</div>
+                )}
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Service date</div>
-                    <div className="relative">
-                      <FiCalendar className="absolute left-3 top-3 text-gray-400" />
-                      <input
-                        name="date"
-                        type="date"
-                        min={new Date().toISOString().split("T")[0]}
-                        value={formData.date}
-                        onChange={(e) => {
-                          setFormData((prev) => ({ ...prev, date: e.target.value }));
-                          setErrors((prev) => ({ ...prev, date: undefined }));
-                        }}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.date ? 'border-red-500' : 'border-gray-300'}`}
-                        required
-                      />
-                    </div>
-                    {errors.date && <div className="text-xs text-red-500 mt-1">{errors.date}</div>}
-                  </label>
-
-                  <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Quick captcha</div>
-                    <div className="relative">
-                      <FiRotateCw className="absolute left-3 top-3 text-gray-400" />
-                      <input
-                        name="captcha"
-                        type="number"
-                        value={formData.captcha}
-                        onChange={(e) => {
-                          setFormData((prev) => ({ ...prev, captcha: e.target.value }));
-                          setErrors((prev) => ({ ...prev, captcha: undefined }));
-                        }}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${errors.captcha ? 'border-red-500' : 'border-gray-300'}`}
-                        placeholder={captcha.question}
-                        required
-                      />
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1 flex items-center justify-between">
-                      <span>{captcha.question}</span>
-                      <button type="button" onClick={generateCaptcha} className="text-blue-600 text-xs">Regenerate</button>
-                    </div>
-                    {errors.captcha && <div className="text-xs text-red-500 mt-1">{errors.captcha}</div>}
-                  </label>
-                </div>
-
-                <label className="block">
-                  <div className="text-sm text-gray-700 mb-1">Service address</div>
-                  <div className="relative">
-                    <FiMapPin className="absolute left-3 top-3 text-gray-400" />
-                    <textarea
-                      name="address"
-                      rows={3}
-                      value={formData.address}
-                      onChange={(e) => {
-                        setFormData((prev) => ({ ...prev, address: e.target.value }));
-                        setErrors((prev) => ({ ...prev, address: undefined }));
-                      }}
-                      className={`w-full pl-10 pr-3 py-2 border rounded-md resize-none ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
-                      placeholder="Full address with landmark"
-                      required
-                    />
-                  </div>
-                  {errors.address && <div className="text-xs text-red-500 mt-1">{errors.address}</div>}
-                  <div className="text-xs text-gray-500 mt-1">Or pick on the map below</div>
-                </label>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-md disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <FiLoader className="animate-spin" />
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      <span>Pay ₹{selectedPrice} & Confirm Booking</span>
-                    )}
-                  </button>
-                </div>
-              </form>
-
-              <div className="mt-6">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Pick location (optional)</h4>
-                <div className="h-56 rounded-md overflow-hidden border">
-                  <MapPicker onLocationSelect={handleLocationSelect} initialAddress={formData.address} disabled={isSubmitting} />
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">Total Amount</div>
+                  <div className="text-2xl font-bold text-gray-900">₹{selectedPrice}</div>
                 </div>
               </div>
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                <FiCheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Booking Confirmed</h3>
-              <p className="text-sm text-gray-600 mb-4">We've saved your booking and sent a confirmation to {formData.email}.</p>
-              {bookingRef && <div className="text-xs text-gray-500 mb-4">Reference: {bookingRef}</div>}
-              <button
-                onClick={() => {
-                  setSuccess(false);
-                  setErrors({});
-                }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-              >
-                Book another service
-              </button>
-            </div>
-          )}
-        </div>
-
-        <aside className="bg-white rounded-xl shadow p-6">
-          <h4 className="text-sm font-medium text-gray-700 mb-4">Booking summary</h4>
-
-          <div className="space-y-3 text-sm text-gray-700">
-            <div>
-              <div className="text-xs text-gray-500">Service</div>
-              <div className="font-medium">{formData.service || "—"}</div>
             </div>
 
-            <div>
-              <div className="text-xs text-gray-500">Provider</div>
-              <div className="font-medium">{selectedProvider?.name || selectedProvider?.username || (formData.providerId ? "Selected" : "—")}</div>
-            </div>
-
-            <div>
-              <div className="text-xs text-gray-500">Date</div>
-              <div className="font-medium">{formData.date ? new Date(formData.date).toLocaleDateString() : "—"}</div>
-            </div>
-
-            <div>
-              <div className="text-xs text-gray-500">Address</div>
-              <div className="font-medium break-words">{formData.address || "—"}</div>
-            </div>
-
-            <div>
-              <div className="text-xs text-gray-500">Amount</div>
-              <div className="text-xl font-semibold">₹{selectedPrice}</div>
-            </div>
-          </div>
-
-          <div className="mt-6 border-t pt-4">
-            <div className="text-xs text-gray-500">Need help?</div>
-            <div className="text-sm text-gray-700">Contact support or check provider details before confirming.</div>
+            <div className="mt-8 pt-6 border-t">
+  <h5 className="text-sm font-medium text-gray-700 mb-2">Need help?</h5>
+  <p className="text-sm text-gray-600 mb-3">
+    Contact our support team for any assistance with your booking.
+  </p>
+  <Link
+    to="/contact"
+    className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+  >
+    Contact Support →
+  </Link>
+</div>
           </div>
         </aside>
       </div>

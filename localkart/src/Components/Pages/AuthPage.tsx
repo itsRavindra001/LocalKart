@@ -131,10 +131,8 @@ const AuthPage: React.FC = () => {
         const data = await res.json();
 
         if (res.ok && data.token && data.user) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("username", data.user.username);
-          localStorage.setItem("role", data.user.role);
-          login(data.user);
+          // Updated to use the login function from AuthContext
+          login(data.token, data.user);
           await showSuccessPopup(data.user.role);
         } else {
           showErrorPopup(data.error || "Invalid username or password.");
