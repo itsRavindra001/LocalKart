@@ -1,5 +1,10 @@
-// src/context/AuthContext.tsx
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 
 export type UserInfo = {
   _id: string;
@@ -7,7 +12,7 @@ export type UserInfo = {
   email: string;
   role: string;
 
-  // 🔹 Add optional fields you’re using in Profile.tsx
+  // 🔹 Optional fields for Profile, Dashboard, etc.
   fullName?: string;
   phone?: string;
   address?: string;
@@ -24,6 +29,7 @@ type AuthContextType = {
   isLoggedIn: boolean;
   login: (token: string, user: UserInfo) => void;
   logout: () => void;
+  updateUserInfo: (updates: Partial<UserInfo>) => void; // ✅ new
   userInfo: UserInfo | null;
   token: string | null;
 };
@@ -36,19 +42,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
 
   const login = (token: string, user: UserInfo) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("userInfo", JSON.stringify(user));
+    try {
+      localStorage.setItem("token", token);
+      localStorage.setItem("userInfo", JSON.stringify(user));
+    } catch (e) {
+      console.error("Storage error:", e);
+    }
     setToken(token);
     setUserInfo(user);
     setIsLoggedIn(true);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userInfo");
+    try {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userInfo");
+    } catch (e) {
+      console.error("Storage error:", e);
+    }
     setToken(null);
     setUserInfo(null);
     setIsLoggedIn(false);
+  };
+
+  const updateUserInfo = (updates: Partial<UserInfo>) => {
+    setUserInfo((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      try {
+        localStorage.setItem("userInfo", JSON.stringify(updated));
+      } catch (e) {
+        console.error("Storage error:", e);
+      }
+      return updated;
+    });
   };
 
   useEffect(() => {
@@ -69,7 +96,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout, userInfo, token }}>
+    <AuthContext.Provider
+      value={{ isLoggedIn, login, logout, updateUserInfo, userInfo, token }}
+    >
       {children}
     </AuthContext.Provider>
   );

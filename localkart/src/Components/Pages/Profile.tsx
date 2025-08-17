@@ -1,5 +1,5 @@
 // src/Components/Pages/ProfilePage.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../Contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
