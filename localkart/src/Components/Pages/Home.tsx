@@ -237,52 +237,52 @@ const Home: React.FC = () => {
       </section>
 
       {/* How LocalKart Works */}
-      <section className="relative py-12 px-4 bg-gradient-to-br from-blue-50 via-white to-emerald-50 font-sans">
-        <h2 className="text-xl md:text-xl font-bold text-blue-700 text-center mb-12">
-          How LocalKart Works
-        </h2>
+<section className="relative py-12 px-4 bg-gradient-to-br from-blue-50 via-white to-emerald-50 font-sans">
+  <h2 className="text-2xl md:text-3xl font-bold text-blue-700 text-center mb-12">
+    How LocalKart Works
+  </h2>
 
-        <div className="relative max-w-5xl mx-auto flex flex-col gap-10 lg:gap-14">
-          <span className="hidden lg:block absolute left-1/2 top-0 h-full w-0.5 bg-blue-200 rounded-full -translate-x-1/2" />
+  <div className="relative max-w-5xl mx-auto flex flex-col gap-10 lg:gap-14">
+    <span className="hidden lg:block absolute left-1/2 top-0 h-full w-0.5 bg-blue-200 rounded-full -translate-x-1/2" />
 
-          {steps.map((step, i) => (
-            <div
-              key={i}
-              // <-- FIXED: callback ref must return void; using block form ensures void return
-              ref={(el) => {
-                stepsRef.current[i] = el ?? null;
-              }}
-              className={`group relative flex flex-col lg:flex-row items-center lg:items-start gap-6
-                transform transition-all duration-700 opacity-0 translate-y-6
-                ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}
-            >
-              {/* Timeline Dot */}
-              <div className="hidden lg:flex flex-col items-center">
-                <span className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-[10px] text-white font-bold flex items-center justify-center shadow">
-                  {i + 1}
-                </span>
-                <span className="flex-1 bg-blue-200 w-0.5" />
-              </div>
-
-              {/* Step Card */}
-              <div className="w-full lg:w-1/2 backdrop-blur-sm bg-white/80 p-4 rounded-xl shadow-md ring-1 ring-blue-100">
-                <div className="text-xl mb-1">{step.icon}</div>
-                <h3 className="text-base font-semibold text-blue-700 mb-1">{step.title}</h3>
-                <p className="text-gray-600 text-sm">{step.desc}</p>
-              </div>
-
-              {/* Image */}
-              <div className="w-full lg:w-1/2 flex justify-center">
-                <img
-                  src={step.img}
-                  alt={step.title}
-                  className="rounded-xl w-full max-w-[160px] mx-auto shadow group-hover:shadow-md transition"
-                />
-              </div>
-            </div>
-          ))}
+    {steps.map((step, i) => (
+      <div
+        key={i}
+        ref={(el) => {
+          stepsRef.current[i] = el ?? null;
+        }}
+        className={`group relative flex flex-col lg:flex-row items-center lg:items-start gap-6
+          transform transition-all duration-700 opacity-0 translate-y-6
+          ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}
+      >
+        {/* Timeline Dot */}
+        <div className="hidden lg:flex flex-col items-center">
+          <span className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-[12px] text-white font-bold flex items-center justify-center shadow-lg">
+            {i + 1}
+          </span>
+          <span className="flex-1 bg-blue-200 w-0.5" />
         </div>
-      </section>
+
+        {/* Step Card */}
+        <div className="w-full lg:w-1/2 backdrop-blur-sm bg-white/90 p-6 rounded-xl shadow-lg ring-1 ring-blue-100 transition-transform duration-300 hover:scale-105">
+          <div className="text-2xl mb-2">{step.icon}</div>
+          <h3 className="text-lg font-semibold text-blue-700 mb-2">{step.title}</h3>
+          <p className="text-gray-600 text-sm">{step.desc}</p>
+        </div>
+
+        {/* Image */}
+        <div className="w-full lg:w-1/2 flex justify-center">
+          <img
+            src={step.img || 'https://via.placeholder.com/160'} // Placeholder image
+            alt={step.title}
+            className="rounded-xl w-full max-w-[160px] mx-auto shadow-lg group-hover:shadow-md transition"
+          />
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
     </div>
   );
 };
