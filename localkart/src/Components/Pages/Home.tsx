@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Hero from './Hero';
+import { motion } from 'framer-motion';
 
 const popularServices = [
   { name: 'Plumbing', img: 'https://img.freepik.com/free-vector/plumbing-service-advertising-banner-repairman-uniform-standing-with-wrench-hand-tools-box-near-sink_575670-1705.jpg?semt=ais_hybrid&w=740', to: '/services/plumbing' },
@@ -145,51 +146,93 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section className="relative isolate py-20 px-4 flex flex-col items-center text-center overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600">
-        <div className="absolute inset-0 -z-10 opacity-30 blur-xl" />
-        <h2 className="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg mb-4">
-          Ready to Get Started?
-        </h2>
-        <p className="text-lg md:text-xl text-white/90 mb-10 max-w-2xl">
-          Join thousands of satisfied customers and service providers
-        </p>
-        <div className="flex flex-wrap justify-center gap-6">
-          <Link
-            to="/book"
-            className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-full shadow hover:shadow-xl transform hover:-translate-y-1 transition"
+       {/* Call to Action */}
+      <section className="relative py-24 px-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-[100px]"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 rounded-full filter blur-[100px]"></div>
+        </div>
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="text-3xl md:text-4xl font-extrabold mb-6"
           >
-            Book Services
-          </Link>
-          <Link
-            to="/provider"
-            className="px-8 py-3 bg-blue-100 text-blue-800 font-semibold rounded-full shadow hover:shadow-xl transform hover:-translate-y-1 transition"
+            Ready to Get Started?
+          </motion.h2>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            viewport={{ once: true }}
+            className="text-lg md:text-xl text-blue-100 mb-10 max-w-2xl mx-auto"
           >
-            Become a Provider
-          </Link>
+            Join thousands of satisfied customers and service providers
+          </motion.p>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="flex flex-wrap justify-center gap-6"
+          >
+            <Link
+              to="/book"
+              className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center"
+            >
+              <span>Book Services</span>
+              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+              </svg>
+            </Link>
+            <Link
+              to="/provider"
+              className="px-8 py-4 bg-blue-500/10 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border border-blue-300/30 hover:bg-blue-500/20"
+            >
+              Become a Provider
+            </Link>
+          </motion.div>
         </div>
       </section>
 
-      {/* Why Choose LocalKart */}
-      <section className="py-20 px-4 bg-gray-50">
-        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 text-center mb-16">
-          Why Choose LocalKart?
-        </h2>
-        <div className="max-w-screen-xl mx-auto grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-8">
-          {whyLocalKart.map(([icon, title, desc], i) => (
-            <div
-              key={i}
-              className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 text-center flex flex-col items-center"
-            >
-              <div className="text-4xl mb-4 w-16 h-16 flex items-center justify-center bg-blue-50 text-blue-600 rounded-full shadow-inner">
-                {icon}
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {title}
-              </h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
-            </div>
-          ))}
+     {/* Why Choose LocalKart */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-screen-xl mx-auto">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-16"
+          >
+            Why Choose <span className="text-blue-600">LocalKart</span>?
+          </motion.h2>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {whyLocalKart.map(([icon, title, desc], index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 border border-gray-100"
+              >
+                <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-5">
+                  {icon}
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  {title}
+                </h3>
+                <p className="text-gray-600 leading-relaxed">{desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
