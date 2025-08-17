@@ -1,19 +1,19 @@
 import  { useEffect, useState } from "react";
 import { useAuth } from "../../Contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-// import {
-//   Button,
-//   Card,
-//   Typography,
-//   Avatar,
-//   Divider,
-//   List,
-//   ListItem,
-//   ListItemText,
-//   CircularProgress,
-//   Box,
-//   Alert,
-// } from "@mui/material";
+import {
+  Button,
+  Card,
+  Typography,
+  Avatar,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  CircularProgress,
+  Box,
+  Alert,
+} from "@mui/material";
 
 interface UserData {
   username: string;
@@ -28,7 +28,7 @@ interface UserData {
 }
 
 const ProfilePage = () => {
-//   const { userInfo, logout, token } = useAuth();
+  const { userInfo, logout, token } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -51,9 +51,9 @@ const ProfilePage = () => {
 
         const data: UserData = await response.json();
         setUserData(data);
-      } catch (error) {
-        setError(error.message);
-        console.error("Profile fetch error:", error);
+      } catch (err) {
+        setError(err.message);
+        console.error("Profile fetch error:", err);
       } finally {
         setLoading(false);
       }
