@@ -173,14 +173,50 @@ const Painting = () => {
             </div>
           </div>
 
+         
           {/* Satisfaction Guarantee */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-xl p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">100% Satisfaction Guarantee</h2>
-            <p className="text-xl mb-6">If you're not completely happy, we'll make it right!</p>
-            <button className="bg-white text-blue-700 font-bold py-3 px-8 rounded-lg hover:bg-blue-50 transition">
-              Book Your Painting Project
-            </button>
-          </div>
+    <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white rounded-2xl shadow-xl p-10 text-center overflow-hidden group transition-all duration-500 hover:shadow-2xl hover:scale-[1.02]">
+
+  {/* Decorative Glow Effect */}
+  <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 blur-3xl opacity-40 group-hover:opacity-70 transition duration-500"></div>
+
+  {/* Content */}
+  <div className="relative z-10">
+    {/* Icon */}
+    <div className="flex justify-center mb-6">
+      <div className="p-4 bg-white/10 rounded-full shadow-lg group-hover:scale-110 transition duration-500">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-12 w-12 text-cyan-300"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0a9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+    </div>
+
+    {/* Heading */}
+    <h2 className="text-3xl font-extrabold mb-3 tracking-wide">
+      100% Satisfaction Guarantee
+    </h2>
+
+    {/* Subtext */}
+    <p className="text-lg text-blue-100 mb-6 max-w-xl mx-auto leading-relaxed">
+      If you're not completely happy with our service, we’ll make it right —
+      no questions asked!
+    </p>
+
+    
+  </div>
+</div>
+
         </div>
       }
     />

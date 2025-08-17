@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import emailjs from "@emailjs/browser";
 import MapPicker from "./MapPicker";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   FiCheckCircle,
   FiAlertCircle,
@@ -15,6 +15,7 @@ import {
   FiRotateCw,
   FiStar,
   FiClock,
+  FiCheck,
 } from "react-icons/fi";
 
 declare global {
@@ -69,11 +70,12 @@ const SERVICES = [
 ];
 
 const BookingPage: React.FC = () => {
+  const location = useLocation();
   const [formData, setFormData] = useState<FormData>({
     name: "",
     phone: "",
     email: "",
-    service: "",
+    service: location.state?.serviceName || "",
     date: "",
     address: "",
     providerId: "",
@@ -88,12 +90,18 @@ const BookingPage: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState(false);
   const [bookingRef, setBookingRef] = useState<string | null>(null);
+  const [showServiceSelection, setShowServiceSelection] = useState(!location.state?.serviceName);
 
   useEffect(() => {
     emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string);
     generateCaptcha();
     fetchUserDetails();
-  }, []);
+
+    // If service is pre-selected from navigation, load providers
+    if (location.state?.serviceName) {
+      fetchProviders(location.state.serviceName);
+    }
+  }, [location.state]);
 
   const fetchUserDetails = async () => {
     try {
@@ -160,6 +168,7 @@ const BookingPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, service: serviceName, providerId: "" }));
     fetchProviders(serviceName);
     setErrors((prev) => ({ ...prev, service: undefined, general: undefined }));
+    setShowServiceSelection(false);
   };
 
   const handleProviderSelect = (id: string) => {
@@ -357,29 +366,51 @@ const BookingPage: React.FC = () => {
 
             {!success ? (
               <>
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Choose a service</h3>
-                  {errors.service && <div className="text-sm text-red-500 mb-2">{errors.service}</div>}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                    {SERVICES.map((svc) => (
-                      <button
-                        key={svc.name}
-                        type="button"
-                        onClick={() => handleServiceSelect(svc.name)}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
-                          formData.service === svc.name 
-                            ? `border-indigo-600 ${svc.color.replace('text', 'bg')} shadow-md` 
-                            : "border-gray-200 hover:border-indigo-300 hover:shadow-sm"
-                        }`}
-                        aria-pressed={formData.service === svc.name}
-                      >
-                        <div className="text-3xl">{svc.icon}</div>
-                        <div className="font-medium text-gray-800 text-sm">{svc.name}</div>
-                        <div className="text-xs font-semibold text-gray-600">₹{svc.price}</div>
-                      </button>
-                    ))}
+                {showServiceSelection ? (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Choose a service</h3>
+                    {errors.service && <div className="text-sm text-red-500 mb-2">{errors.service}</div>}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {SERVICES.map((svc) => (
+                        <button
+                          key={svc.name}
+                          type="button"
+                          onClick={() => handleServiceSelect(svc.name)}
+                          className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                            formData.service === svc.name 
+                              ? `border-indigo-600 ${svc.color.replace('text', 'bg')} shadow-md` 
+                              : "border-gray-200 hover:border-indigo-300 hover:shadow-sm"
+                          }`}
+                          aria-pressed={formData.service === svc.name}
+                        >
+                          <div className="text-3xl">{svc.icon}</div>
+                          <div className="font-medium text-gray-800 text-sm">{svc.name}</div>
+                          <div className="text-xs font-semibold text-gray-600">₹{svc.price}</div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                        SERVICES.find(s => s.name === formData.service)?.color || 'bg-gray-100'
+                      }`}>
+                        {SERVICES.find(s => s.name === formData.service)?.icon || '🛠️'}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-800">{formData.service}</div>
+                        <div className="text-sm text-gray-600">₹{selectedPrice}</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowServiceSelection(true)}
+                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                    >
+                      Change
+                    </button>
+                  </div>
+                )}
 
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Your Provider</h3>
@@ -391,8 +422,11 @@ const BookingPage: React.FC = () => {
                     </div>
                   ) : providers.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50 rounded-lg">
-                      <div className="text-gray-500 mb-2">No providers loaded</div>
-                      <div className="text-sm text-gray-400">Select a service to see available providers</div>
+                      <div className="text-gray-500 mb-2">
+                        {formData.service 
+                          ? "No providers available for this service" 
+                          : "Select a service to see available providers"}
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -428,7 +462,11 @@ const BookingPage: React.FC = () => {
                                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                               }`}
                             >
-                              {formData.providerId === p._id ? "Selected" : "Select"}
+                              {formData.providerId === p._id ? (
+                                <span className="flex items-center gap-1">
+                                  <FiCheck size={16} /> Selected
+                                </span>
+                              ) : "Select"}
                             </button>
                           </div>
                         </div>
@@ -629,6 +667,7 @@ const BookingPage: React.FC = () => {
                   onClick={() => {
                     setSuccess(false);
                     setErrors({});
+                    setShowServiceSelection(true);
                   }}
                   className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-sm"
                 >
@@ -648,7 +687,9 @@ const BookingPage: React.FC = () => {
                 <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Service</div>
                 {formData.service ? (
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${SERVICES.find(s => s.name === formData.service)?.color || 'bg-gray-100'}`}>
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      SERVICES.find(s => s.name === formData.service)?.color || 'bg-gray-100'
+                    }`}>
                       {SERVICES.find(s => s.name === formData.service)?.icon || '🛠️'}
                     </div>
                     <div>
@@ -699,17 +740,17 @@ const BookingPage: React.FC = () => {
             </div>
 
             <div className="mt-8 pt-6 border-t">
-  <h5 className="text-sm font-medium text-gray-700 mb-2">Need help?</h5>
-  <p className="text-sm text-gray-600 mb-3">
-    Contact our support team for any assistance with your booking.
-  </p>
-  <Link
-    to="/contact"
-    className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-  >
-    Contact Support →
-  </Link>
-</div>
+              <h5 className="text-sm font-medium text-gray-700 mb-2">Need help?</h5>
+              <p className="text-sm text-gray-600 mb-3">
+                Contact our support team for any assistance with your booking.
+              </p>
+              <Link
+                to="/contact"
+                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                Contact Support →
+              </Link>
+            </div>
           </div>
         </aside>
       </div>

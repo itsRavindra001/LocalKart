@@ -24,13 +24,14 @@ const ServicePageLayout: React.FC<Props> = ({
 
   const handleBookNow = () => {
     navigate('/book', {
-      state: {
-        serviceName: title,
-        serviceDescription: description,
-        serviceType: serviceType || title.toLowerCase(),
-        serviceImages: images,
-      }
-    });
+  state: {
+    serviceName: title,
+    serviceDescription: description,
+    serviceType: serviceType || title.toLowerCase(),
+    serviceImages: images,
+  }
+});
+
   };
 
   const selectedService = location.state?.selectedService;
