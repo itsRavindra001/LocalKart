@@ -1,4 +1,5 @@
-import  { useEffect, useState } from "react";
+// src/Components/Pages/ProfilePage.tsx
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../../Contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,62 +13,26 @@ import {
   ListItemText,
   CircularProgress,
   Box,
-  Alert,
 } from "@mui/material";
 
-interface UserData {
-  username: string;
-  email: string;
-  fullName?: string;
-  phone?: string;
-  address?: string;
-  isVerified: boolean;
-  createdAt: string;
-  lastLogin: string;
-  profileImage?: string;
-}
-
 const ProfilePage = () => {
-  const { userInfo, logout, token } = useAuth();
+  const { userInfo, logout, updateUserInfo } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('http://your-backend-api.com/api/user/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile data');
-        }
-
-        const data: UserData = await response.json();
-        setUserData(data);
-      } catch (err) {
-        setError(err.message);
-        console.error("Profile fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfileData();
-  }, [token]);
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleEditProfile = () => {
     navigate("/profile/edit");
   };
 
   const handleVerifyEmail = () => {
-    // Implement email verification logic
+    updateUserInfo({ isVerified: true });
     alert("Verification email sent!");
   };
 
@@ -84,22 +49,7 @@ const ProfilePage = () => {
     );
   }
 
-  if (error) {
-    return (
-      <Box sx={{ p: 4, maxWidth: "800px", mx: "auto" }}>
-        <Alert severity="error">{error}</Alert>
-        <Button 
-          variant="contained" 
-          sx={{ mt: 2 }}
-          onClick={() => window.location.reload()}
-        >
-          Retry
-        </Button>
-      </Box>
-    );
-  }
-
-  if (!userData) {
+  if (!userInfo) {
     return (
       <Box sx={{ p: 4, maxWidth: "800px", mx: "auto" }}>
         <Typography variant="h5" gutterBottom>
@@ -125,8 +75,8 @@ const ProfilePage = () => {
           }}
         >
           <Avatar
-            alt={userData.username}
-            src={userData.profileImage || "/default-avatar.png"}
+            alt={userInfo.username}
+            src={userInfo.profileImage || "/default-avatar.png"}
             sx={{
               width: 100,
               height: 100,
@@ -136,14 +86,14 @@ const ProfilePage = () => {
           />
           <Box>
             <Typography variant="h4" gutterBottom>
-              {userData.username}
+              {userInfo.username}
             </Typography>
             <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-              {userData.email}
-              {!userData.isVerified && (
+              {userInfo.email}
+              {!userInfo.isVerified && (
                 <Button
                   size="small"
-                  color="warning"
+                  color="secondary" // changed from warning
                   onClick={handleVerifyEmail}
                   sx={{ ml: 2 }}
                 >
@@ -152,10 +102,16 @@ const ProfilePage = () => {
               )}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Member since: {new Date(userData.createdAt).toLocaleDateString()}
+              Member since:{" "}
+              {userInfo.createdAt
+                ? new Date(userInfo.createdAt).toLocaleDateString()
+                : "N/A"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Last login: {new Date(userData.lastLogin).toLocaleString()}
+              Last login:{" "}
+              {userInfo.lastLogin
+                ? new Date(userInfo.lastLogin).toLocaleString()
+                : "N/A"}
             </Typography>
           </Box>
         </Box>
@@ -171,23 +127,54 @@ const ProfilePage = () => {
             <ListItem>
               <ListItemText
                 primary="Full Name"
-                secondary={userData.fullName || "Not provided"}
+                secondary={userInfo.fullName || "Not provided"}
               />
             </ListItem>
             <ListItem>
               <ListItemText
                 primary="Phone Number"
-                secondary={userData.phone || "Not provided"}
+                secondary={userInfo.phone || "Not provided"}
               />
             </ListItem>
             <ListItem>
               <ListItemText
                 primary="Address"
-                secondary={userData.address || "Not provided"}
+                secondary={userInfo.address || "Not provided"}
               />
             </ListItem>
           </List>
         </Box>
+
+        {/* Provider Info */}
+        {userInfo.role === "provider" && (
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              Service Provider Information
+            </Typography>
+            <List>
+              <ListItem>
+                <ListItemText
+                  primary="Services Offered"
+                  secondary={userInfo.services?.join(", ") || "None"}
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText
+                  primary="Rating"
+                  secondary={
+                    userInfo.rating ? `${userInfo.rating}/5` : "Not rated yet"
+                  }
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText
+                  primary="Completed Jobs"
+                  secondary={userInfo.completedJobs || "0"}
+                />
+              </ListItem>
+            </List>
+          </Box>
+        )}
 
         {/* Action Buttons */}
         <Box
