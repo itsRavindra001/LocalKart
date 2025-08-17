@@ -1,12 +1,23 @@
 // src/context/AuthContext.tsx
-import { createContext, useContext, useState, useEffect } from "react";
-import type { ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-type UserInfo = {
+export type UserInfo = {
   _id: string;
   username: string;
   email: string;
   role: string;
+
+  // 🔹 Add optional fields you’re using in Profile.tsx
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  lastLogin?: string;
+  services?: string[];
+  rating?: number;
+  completedJobs?: number;
+  profileImage?: string;
+  isVerified?: boolean;
+  createdAt?: string;
 };
 
 type AuthContextType = {
@@ -41,25 +52,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const initializeAuth = () => {
-      try {
-        const storedToken = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("userInfo");
+    try {
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("userInfo");
 
-        if (storedToken && storedUser) {
-          // In a real app, you might want to verify the token here
-          setToken(storedToken);
-          setUserInfo(JSON.parse(storedUser));
-          setIsLoggedIn(true);
-        }
-      } catch (error) {
-        console.error("Error initializing auth:", error);
-        localStorage.removeItem("token");
-        localStorage.removeItem("userInfo");
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUserInfo(JSON.parse(storedUser));
+        setIsLoggedIn(true);
       }
-    };
-
-    initializeAuth();
+    } catch (error) {
+      console.error("Error initializing auth:", error);
+      localStorage.removeItem("token");
+      localStorage.removeItem("userInfo");
+    }
   }, []);
 
   return (

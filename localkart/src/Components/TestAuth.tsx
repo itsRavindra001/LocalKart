@@ -5,12 +5,12 @@ import { useAuth } from "../Contexts/AuthContext";
 const TestAuth: React.FC = () => {
   const { isLoggedIn, login, logout } = useAuth();
 
-  // A dummy user object to simulate a logged-in user
+  // Dummy user object matching UserInfo type from AuthContext
   const dummyUser = {
     _id: "123456",
     username: "testuser",
     email: "testuser@example.com",
-    role: "client", // could be "admin" or "provider" too
+    role: "client" as "client" | "admin" | "provider", // explicit union type
   };
 
   return (
@@ -25,7 +25,7 @@ const TestAuth: React.FC = () => {
             if (isLoggedIn) {
               logout();
             } else {
-              login(dummyUser); // Pass required UserInfo object here
+              login(dummyUser); // Correctly typed user object
             }
           }}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition"
