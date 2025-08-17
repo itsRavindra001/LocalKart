@@ -3,3 +3,9 @@
 .input-field {
   @apply w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:outline-none;
 }
+@import "leaflet/dist/leaflet.css";
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
