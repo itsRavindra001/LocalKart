@@ -130,8 +130,8 @@ const Navbar: React.FC = () => {
     setServicesOpen(!servicesOpen);
   };
 
-  const isAdmin = userInfo?.role === "admin";
-  const isProvider = userInfo?.role === "provider";
+  // const isAdmin = userInfo?.role === "admin";
+  // const isProvider = userInfo?.role === "provider";
 
   return (
     <nav className="bg-white shadow-md">

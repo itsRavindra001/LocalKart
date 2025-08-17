@@ -3,8 +3,8 @@ import { useCart } from '../../Contexts/CartContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+// import 'leaflet/dist/leaflet.css';
+// import L from 'leaflet';
 import { OpenStreetMapProvider } from 'leaflet-geosearch';
 import type { SearchResult } from 'leaflet-geosearch';
 
