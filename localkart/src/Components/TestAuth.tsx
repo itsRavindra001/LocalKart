@@ -5,15 +5,15 @@ import { useAuth } from "../Contexts/AuthContext";
 const TestAuth: React.FC = () => {
   const { isLoggedIn, login, logout } = useAuth();
 
-  // Dummy user object matching UserInfo type from AuthContext
+  // Dummy user object matching UserInfo shape in your AuthContext
   const dummyUser = {
     _id: "123456",
     username: "testuser",
     email: "testuser@example.com",
-    role: "client" as "client" | "admin" | "provider", // explicit union type
+    role: "client" as "client" | "admin" | "provider",
   };
 
-  // Dummy token (since login expects 2 arguments)
+  // Dummy token (your AuthContext.login expects token first, then user)
   const dummyToken = "dummy-jwt-token";
 
   return (
@@ -28,8 +28,8 @@ const TestAuth: React.FC = () => {
             if (isLoggedIn) {
               logout();
             } else {
-              // Pass both required arguments: user + token
-              login(dummyUser, dummyToken);
+              // <- Important: token first, then user object (matches AuthContext)
+              login(dummyToken, dummyUser);
             }
           }}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition"
