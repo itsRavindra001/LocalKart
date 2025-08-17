@@ -15,5 +15,8 @@
     "react-leaflet": "^5.0.0",
     "react-responsive-carousel": "^3.2.23",
     "swiper": "^11.2.10"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.20"
   }
 }
