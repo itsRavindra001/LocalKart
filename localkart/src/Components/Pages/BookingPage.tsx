@@ -17,6 +17,7 @@ import {
   FiClock,
   FiCheck,
 } from "react-icons/fi";
+import { useAuth } from "../../Contexts/AuthContext"; // <- auto-fill from auth
 
 declare global {
   interface Window {
@@ -71,11 +72,13 @@ const SERVICES = [
 
 const BookingPage: React.FC = () => {
   const location = useLocation();
+  const { userInfo } = useAuth();
+
   const [formData, setFormData] = useState<FormData>({
     name: "",
     phone: "",
     email: "",
-    service: location.state?.serviceName || "",
+    service: (location.state as any)?.serviceName || "",
     date: "",
     address: "",
     providerId: "",
@@ -90,24 +93,40 @@ const BookingPage: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState(false);
   const [bookingRef, setBookingRef] = useState<string | null>(null);
-  const [showServiceSelection, setShowServiceSelection] = useState(!location.state?.serviceName);
+  const [showServiceSelection, setShowServiceSelection] = useState(!((location.state as any)?.serviceName));
 
+  // On initial mount: init emailjs, generate captcha once, fetch user details fallback, and fetch providers if service preselected
   useEffect(() => {
     emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string);
     generateCaptcha();
     fetchUserDetails();
 
-    // If service is pre-selected from navigation, load providers
-    if (location.state?.serviceName) {
-      fetchProviders(location.state.serviceName);
+    // If service was passed via navigation, set service and load providers
+    const svc = (location.state as any)?.serviceName;
+    if (svc) {
+      setFormData((prev) => ({ ...prev, service: svc }));
+      setShowServiceSelection(false);
+      fetchProviders(svc);
     }
-  }, [location.state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run only once
+
+  // Prefill when userInfo becomes available (don't regenerate captcha here)
+  useEffect(() => {
+    if (!userInfo) return;
+    setFormData((prev) => ({
+      ...prev,
+      name: (userInfo as any).name || (userInfo as any).username || prev.name,
+      email: (userInfo as any).email || prev.email,
+      phone: (userInfo as any).phone || prev.phone,
+    }));
+  }, [userInfo]);
 
   const fetchUserDetails = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
-      const res = await fetch("/api/bookings/me", {
+      const res = await fetch("http://localhost:5000/api/bookings/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -119,7 +138,7 @@ const BookingPage: React.FC = () => {
         phone: data.phone || prev.phone,
       }));
     } catch (err) {
-      console.warn("Could not prefill user details:", err);
+      console.warn("Could not prefill user details from /api/bookings/me:", err);
     }
   };
 
@@ -153,12 +172,13 @@ const BookingPage: React.FC = () => {
     if (!service) return;
     setLoadingProviders(true);
     try {
-      const res = await fetch(`/api/providers?service=${encodeURIComponent(service)}`);
+      const res = await fetch(`http://localhost:5000/api/providers?service=${encodeURIComponent(service)}`);
       if (!res.ok) throw new Error("Failed to load providers");
       const data = await res.json();
       setProviders(Array.isArray(data) ? data : []);
     } catch (err) {
-      setErrors({ general: "Unable to load providers — please try again." });
+      console.error("Error loading providers:", err);
+      setErrors((prev) => ({ ...prev, general: "Unable to load providers — please try again." }));
     } finally {
       setLoadingProviders(false);
     }
@@ -188,15 +208,6 @@ const BookingPage: React.FC = () => {
     return svc ? svc.price : 0;
   };
 
-  const serviceToKey = (serviceName: string) => {
-    return serviceName
-      .toLowerCase()
-      .trim()
-      .replace(/&/g, "and")
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-");
-  };
-
   const loadRazorpayScript = () => {
     return new Promise<void>((resolve, reject) => {
       if (window.Razorpay) return resolve();
@@ -220,15 +231,16 @@ const BookingPage: React.FC = () => {
         throw new Error("Invalid service price");
       }
 
-      const serviceKey = serviceToKey(formData.service);
+      // IMPORTANT: Send human-readable service name (what backend expects)
+      const serviceSentToBackend = formData.service;
 
-      const orderResp = await fetch("/api/bookings/create-order", {
+      const orderResp = await fetch("http://localhost:5000/api/bookings/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ service: serviceKey }),
+        body: JSON.stringify({ service: serviceSentToBackend }),
       });
 
       if (!orderResp.ok) {
@@ -269,7 +281,8 @@ const BookingPage: React.FC = () => {
         },
         handler: async (razorpayResponse: any) => {
           try {
-            const verifyResp = await fetch("/api/bookings/verify-payment", {
+            // NOTE: send the human readable service name here as well
+            const verifyResp = await fetch("http://localhost:5000/api/bookings/verify-payment", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -280,7 +293,7 @@ const BookingPage: React.FC = () => {
                 razorpay_payment_id: razorpayResponse.razorpay_payment_id,
                 razorpay_signature: razorpayResponse.razorpay_signature,
                 providerId: formData.providerId,
-                service: serviceKey,
+                service: serviceSentToBackend,
                 date: new Date(formData.date).toISOString(),
                 address: formData.address,
                 phone: formData.phone,
@@ -302,6 +315,7 @@ const BookingPage: React.FC = () => {
             setSuccess(true);
             setBookingRef(booking._id || booking.id || null);
 
+            // clear form but keep name/email if you want; here we clear everything
             setFormData((prev) => ({
               ...prev,
               phone: "",
@@ -313,6 +327,7 @@ const BookingPage: React.FC = () => {
             }));
             setProviders([]);
             setSelectedProvider(null);
+            // regenerate captcha for next booking
             generateCaptcha();
           } catch (err: any) {
             console.error("Post-payment error:", err);
@@ -377,8 +392,8 @@ const BookingPage: React.FC = () => {
                           type="button"
                           onClick={() => handleServiceSelect(svc.name)}
                           className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
-                            formData.service === svc.name 
-                              ? `border-indigo-600 ${svc.color.replace('text', 'bg')} shadow-md` 
+                            formData.service === svc.name
+                              ? `border-indigo-600 ${svc.color.replace("text", "bg")} shadow-md`
                               : "border-gray-200 hover:border-indigo-300 hover:shadow-sm"
                           }`}
                           aria-pressed={formData.service === svc.name}
@@ -393,10 +408,12 @@ const BookingPage: React.FC = () => {
                 ) : (
                   <div className="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                        SERVICES.find(s => s.name === formData.service)?.color || 'bg-gray-100'
-                      }`}>
-                        {SERVICES.find(s => s.name === formData.service)?.icon || '🛠️'}
+                      <div
+                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                          SERVICES.find((s) => s.name === formData.service)?.color || "bg-gray-100"
+                        }`}
+                      >
+                        {SERVICES.find((s) => s.name === formData.service)?.icon || "🛠️"}
                       </div>
                       <div>
                         <div className="font-semibold text-gray-800">{formData.service}</div>
@@ -423,29 +440,27 @@ const BookingPage: React.FC = () => {
                   ) : providers.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50 rounded-lg">
                       <div className="text-gray-500 mb-2">
-                        {formData.service 
-                          ? "No providers available for this service" 
-                          : "Select a service to see available providers"}
+                        {formData.service ? "No providers available for this service" : "Select a service to see available providers"}
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {providers.map((p) => (
-                        <div 
-                          key={p._id} 
+                        <div
+                          key={p._id}
                           className={`p-4 rounded-xl border-2 transition-all ${formData.providerId === p._id ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-indigo-300"}`}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <div className="font-semibold text-gray-800">{p.name || p.username}</div>
                               <div className="flex items-center gap-3 mt-2 text-sm text-gray-600">
-                                {p.rating && (
+                                {p.rating !== undefined && p.rating !== null && (
                                   <span className="flex items-center gap-1">
                                     <FiStar className="text-yellow-500" />
-                                    {p.rating.toFixed(1)}
+                                    {(p.rating || 0).toFixed(1)}
                                   </span>
                                 )}
-                                {p.experience && (
+                                {p.experience !== undefined && p.experience !== null && (
                                   <span className="flex items-center gap-1">
                                     <FiClock />
                                     {p.experience} yrs exp
@@ -457,16 +472,16 @@ const BookingPage: React.FC = () => {
                               type="button"
                               onClick={() => handleProviderSelect(p._id)}
                               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                formData.providerId === p._id
-                                  ? "bg-indigo-600 text-white"
-                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                formData.providerId === p._id ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                               }`}
                             >
                               {formData.providerId === p._id ? (
                                 <span className="flex items-center gap-1">
                                   <FiCheck size={16} /> Selected
                                 </span>
-                              ) : "Select"}
+                              ) : (
+                                "Select"
+                              )}
                             </button>
                           </div>
                         </div>
@@ -490,7 +505,7 @@ const BookingPage: React.FC = () => {
                             setFormData((prev) => ({ ...prev, name: e.target.value }));
                             setErrors((prev) => ({ ...prev, name: undefined }));
                           }}
-                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
+                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.name ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"} focus:ring-2 focus:outline-none transition`}
                           placeholder="Your full name"
                           required
                         />
@@ -511,7 +526,7 @@ const BookingPage: React.FC = () => {
                             setFormData((prev) => ({ ...prev, phone: e.target.value }));
                             setErrors((prev) => ({ ...prev, phone: undefined }));
                           }}
-                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
+                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.phone ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"} focus:ring-2 focus:outline-none transition`}
                           placeholder="10–15 digits"
                           required
                         />
@@ -534,7 +549,7 @@ const BookingPage: React.FC = () => {
                           setFormData((prev) => ({ ...prev, email: e.target.value }));
                           setErrors((prev) => ({ ...prev, email: undefined }));
                         }}
-                        className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
+                        className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"} focus:ring-2 focus:outline-none transition`}
                         placeholder="you@example.com"
                         required
                       />
@@ -558,13 +573,14 @@ const BookingPage: React.FC = () => {
                             setFormData((prev) => ({ ...prev, date: e.target.value }));
                             setErrors((prev) => ({ ...prev, date: undefined }));
                           }}
-                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.date ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
+                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.date ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"} focus:ring-2 focus:outline-none transition`}
                           required
                         />
                       </div>
                       {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date}</p>}
                     </label>
 
+                    {/* Captcha */}
                     <label className="block">
                       <span className="block text-sm font-medium text-gray-700 mb-1">Quick captcha</span>
                       <div className="relative">
@@ -579,21 +595,24 @@ const BookingPage: React.FC = () => {
                             setFormData((prev) => ({ ...prev, captcha: e.target.value }));
                             setErrors((prev) => ({ ...prev, captcha: undefined }));
                           }}
-                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.captcha ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition`}
-                          placeholder={captcha.question}
+                          className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.captcha ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"} focus:ring-2 focus:outline-none transition`}
+                          placeholder="Enter answer"
                           required
                         />
-                        <button 
-                          type="button" 
-                          onClick={generateCaptcha}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-indigo-600 hover:text-indigo-800"
-                        >
-                          <FiRotateCw className="h-4 w-4" />
-                        </button>
                       </div>
+
                       <div className="mt-1 flex items-center justify-between">
                         <span className="text-xs text-gray-500">{captcha.question}</span>
-                        {errors.captcha && <span className="text-xs text-red-600">{errors.captcha}</span>}
+                        <div className="flex items-center gap-3">
+                          {errors.captcha && <span className="text-xs text-red-600">{errors.captcha}</span>}
+                          <button
+                            type="button"
+                            onClick={generateCaptcha}
+                            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                          >
+                            Refresh
+                          </button>
+                        </div>
                       </div>
                     </label>
                   </div>
@@ -612,7 +631,7 @@ const BookingPage: React.FC = () => {
                           setFormData((prev) => ({ ...prev, address: e.target.value }));
                           setErrors((prev) => ({ ...prev, address: undefined }));
                         }}
-                        className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.address ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'} focus:ring-2 focus:outline-none transition resize-none`}
+                        className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.address ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"} focus:ring-2 focus:outline-none transition resize-none`}
                         placeholder="Full address with landmark"
                         required
                       />
@@ -687,10 +706,8 @@ const BookingPage: React.FC = () => {
                 <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Service</div>
                 {formData.service ? (
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      SERVICES.find(s => s.name === formData.service)?.color || 'bg-gray-100'
-                    }`}>
-                      {SERVICES.find(s => s.name === formData.service)?.icon || '🛠️'}
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${SERVICES.find((s) => s.name === formData.service)?.color || "bg-gray-100"}`}>
+                      {SERVICES.find((s) => s.name === formData.service)?.icon || "🛠️"}
                     </div>
                     <div>
                       <div className="font-semibold">{formData.service}</div>
@@ -716,7 +733,7 @@ const BookingPage: React.FC = () => {
               <div>
                 <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Date</div>
                 {formData.date ? (
-                  <div className="font-semibold">{new Date(formData.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                  <div className="font-semibold">{new Date(formData.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</div>
                 ) : (
                   <div className="text-gray-400 italic">Not selected</div>
                 )}
@@ -741,13 +758,8 @@ const BookingPage: React.FC = () => {
 
             <div className="mt-8 pt-6 border-t">
               <h5 className="text-sm font-medium text-gray-700 mb-2">Need help?</h5>
-              <p className="text-sm text-gray-600 mb-3">
-                Contact our support team for any assistance with your booking.
-              </p>
-              <Link
-                to="/contact"
-                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-              >
+              <p className="text-sm text-gray-600 mb-3">Contact our support team for any assistance with your booking.</p>
+              <Link to="/contact" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
                 Contact Support →
               </Link>
             </div>

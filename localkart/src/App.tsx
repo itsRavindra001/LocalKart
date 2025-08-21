@@ -6,6 +6,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./Components/Pages/Navbar";
 import Footer from "./Components/Pages/Footer";
 import ScrollToTop from "./ScrollToTop"; 
+import { useAuth } from "./Contexts/AuthContext"; // ✅ import auth
 
 // Public pages
 import Home from "./Components/Pages/Home";
@@ -43,18 +44,21 @@ import ProfilePage from "./Components/Pages/Profile";
 
 const App: React.FC = () => {
   const location = useLocation();
+  const { userInfo } = useAuth(); // ✅ get user info from context
 
-  // Hide navbar & footer on login, signup, and admin pages
+  // Hide navbar & footer on login, signup
   const hideNavFooter =
     location.pathname.startsWith("/login") ||
     location.pathname.startsWith("/signup");
 
+  // ✅ Check if logged-in user is a provider
+  const isProvider = userInfo?.role === "provider";
+
   return (
     <>
-      {!hideNavFooter && <Navbar />}
+      {!hideNavFooter && <Navbar isProvider={isProvider} />} {/* ✅ pass prop */}
       <ScrollToTop />
 
-      {/* Render the TestAuth component only on the /test-auth route */}
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />

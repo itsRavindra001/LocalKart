@@ -12,7 +12,7 @@ export type UserInfo = {
   email: string;
   role: string;
 
-  // 🔹 Optional fields for Profile, Dashboard, etc.
+  // 🔹 Optional fields
   fullName?: string;
   phone?: string;
   address?: string;
@@ -29,7 +29,7 @@ type AuthContextType = {
   isLoggedIn: boolean;
   login: (token: string, user: UserInfo) => void;
   logout: () => void;
-  updateUserInfo: (updates: Partial<UserInfo>) => void; // ✅ new
+  updateUserInfo: (updates: Partial<UserInfo>) => void;
   userInfo: UserInfo | null;
   token: string | null;
 };
@@ -37,10 +37,18 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const storedToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+const storedUser = typeof window !== "undefined" ? localStorage.getItem("userInfo") : null;
 
+const [token, setToken] = useState<string | null>(storedToken);
+const [userInfo, setUserInfo] = useState<UserInfo | null>(
+  storedUser ? JSON.parse(storedUser) : null
+);
+const [isLoggedIn, setIsLoggedIn] = useState<boolean>(
+  !!storedToken && !!storedUser
+);
+
+  /** ✅ Login: save token + user */
   const login = (token: string, user: UserInfo) => {
     try {
       localStorage.setItem("token", token);
@@ -53,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoggedIn(true);
   };
 
+  /** ✅ Logout: clear token + user */
   const logout = () => {
     try {
       localStorage.removeItem("token");
@@ -65,9 +74,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoggedIn(false);
   };
 
+  /** ✅ Update user info in state + localStorage */
   const updateUserInfo = (updates: Partial<UserInfo>) => {
     setUserInfo((prev) => {
-      if (!prev) return prev;
+      if (!prev) return prev; // nothing to update
       const updated = { ...prev, ...updates };
       try {
         localStorage.setItem("userInfo", JSON.stringify(updated));
@@ -78,18 +88,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  /** ✅ Restore auth state from localStorage on first load */
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem("token");
       const storedUser = localStorage.getItem("userInfo");
 
       if (storedToken && storedUser) {
+        const parsedUser = JSON.parse(storedUser) as UserInfo;
         setToken(storedToken);
-        setUserInfo(JSON.parse(storedUser));
+        setUserInfo(parsedUser);
         setIsLoggedIn(true);
       }
     } catch (error) {
-      console.error("Error initializing auth:", error);
+      console.error("Error restoring auth state:", error);
       localStorage.removeItem("token");
       localStorage.removeItem("userInfo");
     }
