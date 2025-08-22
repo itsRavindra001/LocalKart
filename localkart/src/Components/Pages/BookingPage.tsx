@@ -70,6 +70,9 @@ const SERVICES = [
   { name: "Tailors", price: 150, icon: "🧵", color: "bg-teal-100 text-teal-800" },
 ];
 
+const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || "";
+
 const BookingPage: React.FC = () => {
   const location = useLocation();
   const { userInfo } = useAuth();
@@ -78,7 +81,7 @@ const BookingPage: React.FC = () => {
     name: "",
     phone: "",
     email: "",
-    service: (location.state as any)?.serviceName || "",
+    service: (location.state as any)?.service || "",
     date: "",
     address: "",
     providerId: "",
@@ -97,7 +100,13 @@ const BookingPage: React.FC = () => {
 
   // On initial mount: init emailjs, generate captcha once, fetch user details fallback, and fetch providers if service preselected
   useEffect(() => {
-    emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string);
+    if (import.meta.env.VITE_EMAILJS_PUBLIC_KEY) {
+      try {
+        emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string);
+      } catch (e) {
+        console.warn("emailjs init failed:", e);
+      }
+    }
     generateCaptcha();
     fetchUserDetails();
 
@@ -126,7 +135,7 @@ const BookingPage: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
-      const res = await fetch("http://localhost:5000/api/bookings/me", {
+      const res = await fetch(`${BACKEND}/api/bookings/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -172,7 +181,7 @@ const BookingPage: React.FC = () => {
     if (!service) return;
     setLoadingProviders(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/providers?service=${encodeURIComponent(service)}`);
+      const res = await fetch(`${BACKEND}/api/providers?service=${encodeURIComponent(service)}`);
       if (!res.ok) throw new Error("Failed to load providers");
       const data = await res.json();
       setProviders(Array.isArray(data) ? data : []);
@@ -210,7 +219,9 @@ const BookingPage: React.FC = () => {
 
   const loadRazorpayScript = () => {
     return new Promise<void>((resolve, reject) => {
-      if (window.Razorpay) return resolve();
+      if ((window as any).Razorpay) return resolve();
+      const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (existing) return resolve();
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => resolve();
@@ -219,133 +230,184 @@ const BookingPage: React.FC = () => {
     });
   };
 
-  const handlePaymentAndBooking = async () => {
-    setErrors({});
-    setIsSubmitting(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("Please log in to continue.");
+ // put this inside your BookingPage component (replace existing handlePaymentAndBooking)
+// Map UI/display names to backend service keys
+const serviceKeyMap: Record<string, string> = {
+  "Salon at Home": "salon",
+  "Plumbing": "plumbing",
+  "Electrician": "electrician",
+  "AC Repair": "ac-repair",
+  "Cleaning": "cleaning",
+  "Painting": "painting",
+  "Carpentry": "carpentry",
+  "Tutors": "tutors",
+  "Tailors": "tailors",
+};
 
-      const servicePrice = getServicePrice();
-      if (!servicePrice || servicePrice <= 0) {
-        throw new Error("Invalid service price");
-      }
+const handlePaymentAndBooking = async () => {
+  setErrors({});
+  setIsSubmitting(true);
 
-      // IMPORTANT: Send human-readable service name (what backend expects)
-      const serviceSentToBackend = formData.service;
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("Please log in to continue.");
 
-      const orderResp = await fetch("http://localhost:5000/api/bookings/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ service: serviceSentToBackend }),
-      });
+    // Get the service chosen by user
+    const svcDisplay = (formData.service || "").toString().trim();
+    if (!svcDisplay) throw new Error("Please choose a service before paying.");
+    if (!formData.providerId) throw new Error("Please select a provider before paying.");
 
-      if (!orderResp.ok) {
-        const errorData = await orderResp.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || "Payment init failed");
-      }
+    // Convert display name → backend key
+    const svcKey = serviceKeyMap[svcDisplay];
+    if (!svcKey) throw new Error(`Invalid service: ${svcDisplay}`);
 
-      const orderJson = await orderResp.json();
-      const { orderId, amount, currency, key } = orderJson;
+    const servicePrice = getServicePrice();
+    if (!servicePrice || servicePrice <= 0) throw new Error("Invalid service price");
 
-      if (!orderId || !key || !amount) throw new Error("Payment service unavailable");
+    // Build payload
+    const createOrderPayload = {
+      serviceName: svcDisplay,  // ✅ keep display name for logs
+      service: svcKey,          // ✅ backend key
+      providerId: formData.providerId,
+      provider: selectedProvider
+        ? { id: selectedProvider._id, name: selectedProvider.name || selectedProvider.username }
+        : undefined,
+      amount: servicePrice,
+      customer: {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+      },
+    };
 
-      const expectedPaise = Math.round(servicePrice * 100);
-      if (amount !== expectedPaise) {
-        throw new Error("Price mismatch with server. Please try again.");
-      }
+    console.log("Create-order payload:", createOrderPayload);
 
-      await loadRazorpayScript();
+    // Call backend
+    const orderResp = await fetch(`${BACKEND}/api/bookings/create-order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(createOrderPayload),
+    });
 
-      const options: any = {
-        key,
-        amount,
-        currency: currency || "INR",
-        name: "LocalKart",
-        description: `${formData.service} booking`,
-        order_id: orderId,
-        prefill: {
-          name: formData.name,
-          email: formData.email,
-          contact: formData.phone,
-        },
-        theme: { color: "#4f46e5" },
-        modal: {
-          ondismiss: () => {
-            setIsSubmitting(false);
-            setErrors({ general: "Payment was cancelled" });
-          },
-        },
-        handler: async (razorpayResponse: any) => {
-          try {
-            // NOTE: send the human readable service name here as well
-            const verifyResp = await fetch("http://localhost:5000/api/bookings/verify-payment", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                razorpay_order_id: razorpayResponse.razorpay_order_id,
-                razorpay_payment_id: razorpayResponse.razorpay_payment_id,
-                razorpay_signature: razorpayResponse.razorpay_signature,
-                providerId: formData.providerId,
-                service: serviceSentToBackend,
-                date: new Date(formData.date).toISOString(),
-                address: formData.address,
-                phone: formData.phone,
-                amount: amount / 100,
-              }),
-            });
-
-            if (!verifyResp.ok) {
-              const errData = await verifyResp.json().catch(() => ({}));
-              throw new Error(errData.error || errData.message || "Payment verification failed");
-            }
-
-            const verifyJson = await verifyResp.json();
-            if (!verifyJson.success) {
-              throw new Error(verifyJson.error || "Payment not verified");
-            }
-
-            const booking = verifyJson.booking;
-            setSuccess(true);
-            setBookingRef(booking._id || booking.id || null);
-
-            // clear form but keep name/email if you want; here we clear everything
-            setFormData((prev) => ({
-              ...prev,
-              phone: "",
-              service: "",
-              date: "",
-              address: "",
-              providerId: "",
-              captcha: "",
-            }));
-            setProviders([]);
-            setSelectedProvider(null);
-            // regenerate captcha for next booking
-            generateCaptcha();
-          } catch (err: any) {
-            console.error("Post-payment error:", err);
-            setErrors({ general: err.message || "Payment completed but verification failed" });
-          } finally {
-            setIsSubmitting(false);
-          }
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err: any) {
-      console.error("Payment error:", err);
-      setErrors({ general: err.message || "Payment failed. Please try again." });
-      setIsSubmitting(false);
+    if (!orderResp.ok) {
+      const text = await orderResp.text().catch(() => "");
+      let parsed: any = {};
+      try { parsed = JSON.parse(text); } catch {}
+      const errMsg = parsed?.error || parsed?.message || text || `Create order failed (${orderResp.status})`;
+      throw new Error(errMsg);
     }
-  };
+
+    const orderJson = await orderResp.json().catch(() => ({} as any));
+    console.log("Order response from server:", orderJson);
+
+    // Normalize order data
+    const orderId = orderJson.orderId || orderJson.id || orderJson.order_id;
+    const serverKey = orderJson.key || RAZORPAY_KEY || import.meta.env.VITE_RAZORPAY_KEY_ID;
+    let serverAmountPaise = Number(orderJson.amount || orderJson.amount_in_paise || 0);
+    if (serverAmountPaise > 0 && serverAmountPaise <= 10000) {
+      serverAmountPaise = Math.round(servicePrice * 100);
+    }
+
+    const expectedPaise = Math.round(servicePrice * 100);
+    const amountForCheckout = serverAmountPaise || expectedPaise;
+
+    if (!orderId) throw new Error("Payment service did not return an order id.");
+    if (!serverKey) throw new Error("Payment key not provided (missing Razorpay key).");
+    if (amountForCheckout !== expectedPaise) throw new Error("Price mismatch between client and server. Please try again.");
+
+    // Load Razorpay
+    await loadRazorpayScript();
+
+    const options: any = {
+      key: serverKey,
+      amount: amountForCheckout,
+      currency: orderJson.currency || "INR",
+      name: "LocalKart",
+      description: `${svcDisplay} booking`,
+      order_id: orderId,
+      prefill: { name: formData.name, email: formData.email, contact: formData.phone },
+      theme: { color: "#4f46e5" },
+      modal: {
+        ondismiss: () => {
+          setIsSubmitting(false);
+          setErrors({ general: "Payment was cancelled" });
+        },
+      },
+      handler: async (razorpayResponse: any) => {
+        try {
+          const verifyBody = {
+            razorpay_order_id: razorpayResponse.razorpay_order_id,
+            razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+            razorpay_signature: razorpayResponse.razorpay_signature,
+            providerId: formData.providerId,
+            serviceName: svcDisplay,
+            service: svcKey,   // ✅ backend key here too
+            date: new Date(formData.date).toISOString(),
+            address: formData.address,
+            phone: formData.phone,
+            amount: amountForCheckout / 100,
+          };
+          console.log("Verify-payment payload:", verifyBody);
+
+          const verifyResp = await fetch(`${BACKEND}/api/bookings/verify-payment`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(verifyBody),
+          });
+
+          if (!verifyResp.ok) {
+            const text = await verifyResp.text().catch(() => "");
+            let parsed: any = {};
+            try { parsed = JSON.parse(text); } catch {}
+            const message = parsed?.error || parsed?.message || text || `Verification failed (${verifyResp.status})`;
+            throw new Error(message);
+          }
+
+          const verifyJson = await verifyResp.json().catch(() => ({} as any));
+          if (verifyJson.success === false) throw new Error(verifyJson.error || "Payment not verified");
+
+          const booking = verifyJson.booking || verifyJson.data || verifyJson;
+          setSuccess(true);
+          setBookingRef(booking?._id || booking?.id || null);
+
+          // Reset form
+          setFormData((prev) => ({
+            ...prev,
+            phone: "",
+            service: "",
+            date: "",
+            address: "",
+            providerId: "",
+            captcha: "",
+          }));
+          setProviders([]);
+          setSelectedProvider(null);
+          generateCaptcha();
+        } catch (err: any) {
+          console.error("Post-payment/verify error:", err);
+          setErrors({ general: err.message || "Payment completed but verification failed" });
+        } finally {
+          setIsSubmitting(false);
+        }
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  } catch (err: any) {
+    console.error("handlePaymentAndBooking error:", err);
+    setErrors({ general: err?.message || "Payment failed. Please try again." });
+    setIsSubmitting(false);
+  }
+};
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -367,9 +429,7 @@ const BookingPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg p-6">
             <header className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900">Book a Service</h1>
-              <p className="text-gray-600 mt-2">
-                Quick — pick a service, select a provider, choose date & location.
-              </p>
+              <p className="text-gray-600 mt-2">Quick — pick a service, select a provider, choose date & location.</p>
             </header>
 
             {errors.general && (
@@ -408,11 +468,7 @@ const BookingPage: React.FC = () => {
                 ) : (
                   <div className="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                          SERVICES.find((s) => s.name === formData.service)?.color || "bg-gray-100"
-                        }`}
-                      >
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${SERVICES.find((s) => s.name === formData.service)?.color || "bg-gray-100"}`}>
                         {SERVICES.find((s) => s.name === formData.service)?.icon || "🛠️"}
                       </div>
                       <div>
@@ -420,10 +476,7 @@ const BookingPage: React.FC = () => {
                         <div className="text-sm text-gray-600">₹{selectedPrice}</div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setShowServiceSelection(true)}
-                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                    >
+                    <button onClick={() => setShowServiceSelection(true)} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
                       Change
                     </button>
                   </div>
@@ -439,17 +492,12 @@ const BookingPage: React.FC = () => {
                     </div>
                   ) : providers.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50 rounded-lg">
-                      <div className="text-gray-500 mb-2">
-                        {formData.service ? "No providers available for this service" : "Select a service to see available providers"}
-                      </div>
+                      <div className="text-gray-500 mb-2">{formData.service ? "No providers available for this service" : "Select a service to see available providers"}</div>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {providers.map((p) => (
-                        <div
-                          key={p._id}
-                          className={`p-4 rounded-xl border-2 transition-all ${formData.providerId === p._id ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-indigo-300"}`}
-                        >
+                        <div key={p._id} className={`p-4 rounded-xl border-2 transition-all ${formData.providerId === p._id ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-indigo-300"}`}>
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <div className="font-semibold text-gray-800">{p.name || p.username}</div>
@@ -468,13 +516,7 @@ const BookingPage: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => handleProviderSelect(p._id)}
-                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                formData.providerId === p._id ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                              }`}
-                            >
+                            <button type="button" onClick={() => handleProviderSelect(p._id)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${formData.providerId === p._id ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
                               {formData.providerId === p._id ? (
                                 <span className="flex items-center gap-1">
                                   <FiCheck size={16} /> Selected
@@ -605,11 +647,7 @@ const BookingPage: React.FC = () => {
                         <span className="text-xs text-gray-500">{captcha.question}</span>
                         <div className="flex items-center gap-3">
                           {errors.captcha && <span className="text-xs text-red-600">{errors.captcha}</span>}
-                          <button
-                            type="button"
-                            onClick={generateCaptcha}
-                            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                          >
+                          <button type="button" onClick={generateCaptcha} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
                             Refresh
                           </button>
                         </div>
